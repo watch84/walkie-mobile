@@ -1,0 +1,742 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		013C668A103DD96AAB4C6FE6 /* WalkieAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EA093C3BE8E373E46E1B53 /* WalkieAPI.swift */; };
+		02A2116403B0AA0BB2749520 /* DebugSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DEB1AF5A9EC796708E9409D /* DebugSettingsView.swift */; };
+		0C30084D389BE9AB5A41869C /* AppDependencies+Live.swift in Sources */ = {isa = PBXBuildFile; fileRef = 516DF414C321A3D6AB8E1F3D /* AppDependencies+Live.swift */; };
+		17EEA4A9AB0304C95699AF41 /* ProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CA2E36B3E1B3AA7ABB24509 /* ProtocolTests.swift */; };
+		2428936C6472E17BA9E4BB5F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B629DDC5D11330250FABBEB /* RootView.swift */; };
+		2CC2F01CA5552870FB2B577C /* DisplayName.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B6A237B87B60DC14268E9CE /* DisplayName.swift */; };
+		2F58B5D8166403F26C6B1C47 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 752506D5C1A495AA105C05A7 /* AppModel.swift */; };
+		34E5B4F54DB86518DDE19E68 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A4748624A7865018B0993C9 /* Theme.swift */; };
+		415836F755A82802E9E1F0AD /* LiveKitURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD12BF178ED952B8ED15DF7D /* LiveKitURL.swift */; };
+		5755DE2DB5A6703E1C3C3C25 /* DialMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 724213EDD8829F16B70DF1C6 /* DialMotion.swift */; };
+		58F7E03CBC2F1AC0198221A5 /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3C4EEA13D97C00FF3E00BCD7 /* LiveKit */; };
+		67291C1181B1F2F339D6468C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E8FD57763E9BF8B7333D66D5 /* Assets.xcassets */; };
+		6849E9ABC825CAA49E24A362 /* WalkieTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE299DBA45EE5D51BE039DF7 /* WalkieTests.swift */; };
+		6A86D1F5FB255D0C9A993091 /* Copy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB47C6BD9140757CC4AF6C95 /* Copy.swift */; };
+		756348A22CB6BBD6C2D986B9 /* Stations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B7AFCCC9EAFC1FBEABC0217 /* Stations.swift */; };
+		7699C15FE2C756F2ADAD9068 /* RadioShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8144F1BA874C4AB7E7D0C3C /* RadioShellView.swift */; };
+		775EF3B480FACD404B80231F /* LiveTalkServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82F602AD16FBFF8368AE2626 /* LiveTalkServices.swift */; };
+		7BA14FF6224B66CC123448F4 /* LiveKitTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A483FAAC0D68AF43A860ACB /* LiveKitTransport.swift */; };
+		99A88CD656F26305ECFC7CEA /* TunerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01EC66433234E4379E993016 /* TunerTests.swift */; };
+		9FFB421BF80A9B8FC047C86E /* WalkieApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0603BA991B2F980BEBE72E0F /* WalkieApp.swift */; };
+		A0240BD2269A738181F09EA6 /* AudioSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D240C1AC8164D726E262E0E /* AudioSessionController.swift */; };
+		A0B976179DE7AFE7F30739BA /* RadioSoundEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C42119B3CEAC6982A2D72EED /* RadioSoundEngine.swift */; };
+		A3A14A60EE65EF038745F9E6 /* TuneInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB31CD382603FC99C8FAC27 /* TuneInView.swift */; };
+		A53A9D4B2D2CAE090C1B9C8E /* RoomTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955FD039FE47D5208CF92EF4 /* RoomTransport.swift */; };
+		AB40424790DE83F07F0CECF2 /* TalkController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8ACB1DA7D361FEB0DEEC96E /* TalkController.swift */; };
+		AFFB84F7AE281623ACA26B6D /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F9AA4BF8A6BBAA40C7C5BE9 /* OnboardingView.swift */; };
+		BE234A71A7E0B6C8E7193586 /* DetentHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECAB06D5A2F2AF3311062C8 /* DetentHaptics.swift */; };
+		C05CFA9D5AD8EA7DBEAAB0DC /* FlashLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DB0681C208D3997A9A169C0 /* FlashLine.swift */; };
+		C4256BA879A51741ADB912BD /* Fakes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955FF44A8471E1B51E0E425D /* Fakes.swift */; };
+		D746A3BEC006982C318F46A1 /* ProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB9429956A857D0D6B16E10B /* ProfileStore.swift */; };
+		DB0C4E63738F5DD6314C2C82 /* SoundBed.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0331C8A3FBC6BDF3285DB6F /* SoundBed.swift */; };
+		E8352D511C111B88C3F26B32 /* ChannelSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 911945F3AB9A645F33D741B5 /* ChannelSession.swift */; };
+		E95BAE1A518098E7F30421D6 /* ReportController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDC0DFEAF4677BDA6D6F3C8A /* ReportController.swift */; };
+		EAB4FF02F39ED6EEEFCB9FA5 /* PushToTalkButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6693A891180819BBB6740F8 /* PushToTalkButton.swift */; };
+		EE3CD11924085D99E30919AB /* DebugSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 637BB1414C5678681C207FD0 /* DebugSettings.swift */; };
+		EFD0C369CB67AAD336380FEA /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9983DF7023A8D42FAEC3C9E6 /* Protocol.swift */; };
+		F62E248CE79CAC5ABDCA0FBD /* Tuner.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9F80F2B58095CF07B910D9 /* Tuner.swift */; };
+		F9C9B1CDF75870C4D32B9824 /* ToneSynth.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA19B110E7B0278FB8413C1E /* ToneSynth.swift */; };
+		FA6DB19007E4BC3AF2DBBEE5 /* PolishTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 883A1EFBF1568AB9C3820A2B /* PolishTests.swift */; };
+		FAC502D0428C0688E27BC2B8 /* TalkControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EC550C63BB12C3569B096CA /* TalkControllerTests.swift */; };
+		FB31DDFE9ED3FC63D5DCEBD8 /* StationDial.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2079A5510A546495F5D3569 /* StationDial.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		4473806E6CE9D117170A15ED /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F48563315A4731DBE0E95F5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D16DDDD7703182373C2E5DDE;
+			remoteInfo = Walkie;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		01EC66433234E4379E993016 /* TunerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerTests.swift; sourceTree = "<group>"; };
+		0603BA991B2F980BEBE72E0F /* WalkieApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkieApp.swift; sourceTree = "<group>"; };
+		0EC550C63BB12C3569B096CA /* TalkControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkControllerTests.swift; sourceTree = "<group>"; };
+		13034F8EBDD09901390F84B4 /* Walkie.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Walkie.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2464581AA43250949B404484 /* WalkieTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = WalkieTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B629DDC5D11330250FABBEB /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		34392AFA2645D9BA8EA72C59 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		3A483FAAC0D68AF43A860ACB /* LiveKitTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveKitTransport.swift; sourceTree = "<group>"; };
+		3B6A237B87B60DC14268E9CE /* DisplayName.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayName.swift; sourceTree = "<group>"; };
+		3B7AFCCC9EAFC1FBEABC0217 /* Stations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stations.swift; sourceTree = "<group>"; };
+		49EA093C3BE8E373E46E1B53 /* WalkieAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkieAPI.swift; sourceTree = "<group>"; };
+		516DF414C321A3D6AB8E1F3D /* AppDependencies+Live.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDependencies+Live.swift"; sourceTree = "<group>"; };
+		53336961586F31F9F36E3FFF /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		5D240C1AC8164D726E262E0E /* AudioSessionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSessionController.swift; sourceTree = "<group>"; };
+		637BB1414C5678681C207FD0 /* DebugSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSettings.swift; sourceTree = "<group>"; };
+		6CA2E36B3E1B3AA7ABB24509 /* ProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProtocolTests.swift; sourceTree = "<group>"; };
+		6DB0681C208D3997A9A169C0 /* FlashLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlashLine.swift; sourceTree = "<group>"; };
+		724213EDD8829F16B70DF1C6 /* DialMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialMotion.swift; sourceTree = "<group>"; };
+		752506D5C1A495AA105C05A7 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		7DEB1AF5A9EC796708E9409D /* DebugSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSettingsView.swift; sourceTree = "<group>"; };
+		7EB31CD382603FC99C8FAC27 /* TuneInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TuneInView.swift; sourceTree = "<group>"; };
+		82F602AD16FBFF8368AE2626 /* LiveTalkServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTalkServices.swift; sourceTree = "<group>"; };
+		883A1EFBF1568AB9C3820A2B /* PolishTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolishTests.swift; sourceTree = "<group>"; };
+		8A4748624A7865018B0993C9 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		8F9AA4BF8A6BBAA40C7C5BE9 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		911945F3AB9A645F33D741B5 /* ChannelSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelSession.swift; sourceTree = "<group>"; };
+		955FD039FE47D5208CF92EF4 /* RoomTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomTransport.swift; sourceTree = "<group>"; };
+		955FF44A8471E1B51E0E425D /* Fakes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fakes.swift; sourceTree = "<group>"; };
+		9983DF7023A8D42FAEC3C9E6 /* Protocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Protocol.swift; sourceTree = "<group>"; };
+		9ECAB06D5A2F2AF3311062C8 /* DetentHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetentHaptics.swift; sourceTree = "<group>"; };
+		B6693A891180819BBB6740F8 /* PushToTalkButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushToTalkButton.swift; sourceTree = "<group>"; };
+		B8144F1BA874C4AB7E7D0C3C /* RadioShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadioShellView.swift; sourceTree = "<group>"; };
+		C0331C8A3FBC6BDF3285DB6F /* SoundBed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundBed.swift; sourceTree = "<group>"; };
+		C42119B3CEAC6982A2D72EED /* RadioSoundEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadioSoundEngine.swift; sourceTree = "<group>"; };
+		CB47C6BD9140757CC4AF6C95 /* Copy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Copy.swift; sourceTree = "<group>"; };
+		CB9429956A857D0D6B16E10B /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
+		CD9F80F2B58095CF07B910D9 /* Tuner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tuner.swift; sourceTree = "<group>"; };
+		CDC0DFEAF4677BDA6D6F3C8A /* ReportController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportController.swift; sourceTree = "<group>"; };
+		D2079A5510A546495F5D3569 /* StationDial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationDial.swift; sourceTree = "<group>"; };
+		E8FD57763E9BF8B7333D66D5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		EA19B110E7B0278FB8413C1E /* ToneSynth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToneSynth.swift; sourceTree = "<group>"; };
+		EE299DBA45EE5D51BE039DF7 /* WalkieTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalkieTests.swift; sourceTree = "<group>"; };
+		F8ACB1DA7D361FEB0DEEC96E /* TalkController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TalkController.swift; sourceTree = "<group>"; };
+		FD12BF178ED952B8ED15DF7D /* LiveKitURL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveKitURL.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		6CCA5980873F4E452B0F8EED /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				58F7E03CBC2F1AC0198221A5 /* LiveKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0D269AC1EC5B07A9CABB9132 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				CB47C6BD9140757CC4AF6C95 /* Copy.swift */,
+				724213EDD8829F16B70DF1C6 /* DialMotion.swift */,
+				C0331C8A3FBC6BDF3285DB6F /* SoundBed.swift */,
+				8A4748624A7865018B0993C9 /* Theme.swift */,
+				EA19B110E7B0278FB8413C1E /* ToneSynth.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		2E87EAB8B0E035E1189B3F2E /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				8F9AA4BF8A6BBAA40C7C5BE9 /* OnboardingView.swift */,
+				7EB31CD382603FC99C8FAC27 /* TuneInView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		328B1AD31F8EEF618DEF7D7B /* App */ = {
+			isa = PBXGroup;
+			children = (
+				2B629DDC5D11330250FABBEB /* RootView.swift */,
+				0603BA991B2F980BEBE72E0F /* WalkieApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		585B1E2A0C21EA3A8C71BD26 /* Walkie */ = {
+			isa = PBXGroup;
+			children = (
+				328B1AD31F8EEF618DEF7D7B /* App */,
+				70821607473EDE0C04211A73 /* Features */,
+				EE996D6F3BAC1BA3B5854009 /* Live */,
+				9ECE84D62065322470BB4A2B /* Models */,
+				8CF7AD30FEFE6EA03AD87005 /* Networking */,
+				D037E9FBE320C93CE09CF6AE /* Resources */,
+				FC60FBFE43671D1EFAF19A7E /* Session */,
+				0D269AC1EC5B07A9CABB9132 /* Support */,
+			);
+			path = Walkie;
+			sourceTree = "<group>";
+		};
+		70821607473EDE0C04211A73 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				F8831D82868D376F2BC6A1CE /* Debug */,
+				2E87EAB8B0E035E1189B3F2E /* Onboarding */,
+				7900B57CDF395ED7C8AF4CA6 /* Radio */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		7900B57CDF395ED7C8AF4CA6 /* Radio */ = {
+			isa = PBXGroup;
+			children = (
+				B6693A891180819BBB6740F8 /* PushToTalkButton.swift */,
+				B8144F1BA874C4AB7E7D0C3C /* RadioShellView.swift */,
+				D2079A5510A546495F5D3569 /* StationDial.swift */,
+			);
+			path = Radio;
+			sourceTree = "<group>";
+		};
+		8CF7AD30FEFE6EA03AD87005 /* Networking */ = {
+			isa = PBXGroup;
+			children = (
+				FD12BF178ED952B8ED15DF7D /* LiveKitURL.swift */,
+				9983DF7023A8D42FAEC3C9E6 /* Protocol.swift */,
+				49EA093C3BE8E373E46E1B53 /* WalkieAPI.swift */,
+			);
+			path = Networking;
+			sourceTree = "<group>";
+		};
+		9E896B60832A7F7D14C4747E /* WalkieTests */ = {
+			isa = PBXGroup;
+			children = (
+				955FF44A8471E1B51E0E425D /* Fakes.swift */,
+				883A1EFBF1568AB9C3820A2B /* PolishTests.swift */,
+				6CA2E36B3E1B3AA7ABB24509 /* ProtocolTests.swift */,
+				0EC550C63BB12C3569B096CA /* TalkControllerTests.swift */,
+				01EC66433234E4379E993016 /* TunerTests.swift */,
+				EE299DBA45EE5D51BE039DF7 /* WalkieTests.swift */,
+			);
+			path = WalkieTests;
+			sourceTree = "<group>";
+		};
+		9ECE84D62065322470BB4A2B /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				752506D5C1A495AA105C05A7 /* AppModel.swift */,
+				637BB1414C5678681C207FD0 /* DebugSettings.swift */,
+				3B6A237B87B60DC14268E9CE /* DisplayName.swift */,
+				CB9429956A857D0D6B16E10B /* ProfileStore.swift */,
+				3B7AFCCC9EAFC1FBEABC0217 /* Stations.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		AD40DE260A6A6C2374F1C667 = {
+			isa = PBXGroup;
+			children = (
+				DBE680E553F361529C9571D0 /* Configs */,
+				585B1E2A0C21EA3A8C71BD26 /* Walkie */,
+				9E896B60832A7F7D14C4747E /* WalkieTests */,
+				B43025AB9F4B51E0E0A22C56 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B43025AB9F4B51E0E0A22C56 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				13034F8EBDD09901390F84B4 /* Walkie.app */,
+				2464581AA43250949B404484 /* WalkieTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D037E9FBE320C93CE09CF6AE /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				E8FD57763E9BF8B7333D66D5 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		DBE680E553F361529C9571D0 /* Configs */ = {
+			isa = PBXGroup;
+			children = (
+				34392AFA2645D9BA8EA72C59 /* Debug.xcconfig */,
+				53336961586F31F9F36E3FFF /* Release.xcconfig */,
+			);
+			path = Configs;
+			sourceTree = "<group>";
+		};
+		EE996D6F3BAC1BA3B5854009 /* Live */ = {
+			isa = PBXGroup;
+			children = (
+				516DF414C321A3D6AB8E1F3D /* AppDependencies+Live.swift */,
+				5D240C1AC8164D726E262E0E /* AudioSessionController.swift */,
+				9ECAB06D5A2F2AF3311062C8 /* DetentHaptics.swift */,
+				3A483FAAC0D68AF43A860ACB /* LiveKitTransport.swift */,
+				82F602AD16FBFF8368AE2626 /* LiveTalkServices.swift */,
+				C42119B3CEAC6982A2D72EED /* RadioSoundEngine.swift */,
+			);
+			path = Live;
+			sourceTree = "<group>";
+		};
+		F8831D82868D376F2BC6A1CE /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				7DEB1AF5A9EC796708E9409D /* DebugSettingsView.swift */,
+			);
+			path = Debug;
+			sourceTree = "<group>";
+		};
+		FC60FBFE43671D1EFAF19A7E /* Session */ = {
+			isa = PBXGroup;
+			children = (
+				911945F3AB9A645F33D741B5 /* ChannelSession.swift */,
+				6DB0681C208D3997A9A169C0 /* FlashLine.swift */,
+				CDC0DFEAF4677BDA6D6F3C8A /* ReportController.swift */,
+				955FD039FE47D5208CF92EF4 /* RoomTransport.swift */,
+				F8ACB1DA7D361FEB0DEEC96E /* TalkController.swift */,
+				CD9F80F2B58095CF07B910D9 /* Tuner.swift */,
+			);
+			path = Session;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		7F3D84AD658C46175C12CA5B /* WalkieTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 603EA82EEA259D3BFC98A90A /* Build configuration list for PBXNativeTarget "WalkieTests" */;
+			buildPhases = (
+				28B1AA67AB3913A86B4760C8 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A4A7563D22AB00BB704E83BD /* PBXTargetDependency */,
+			);
+			name = WalkieTests;
+			packageProductDependencies = (
+			);
+			productName = WalkieTests;
+			productReference = 2464581AA43250949B404484 /* WalkieTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		D16DDDD7703182373C2E5DDE /* Walkie */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DAC57F7171E70437DE4D1EC8 /* Build configuration list for PBXNativeTarget "Walkie" */;
+			buildPhases = (
+				50AE4E4697E0284BB92EF693 /* Check Xcode project is current */,
+				D26F3F12F164900374040811 /* Sources */,
+				62AE1FCD2CE1221661342F0E /* Resources */,
+				6CCA5980873F4E452B0F8EED /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Walkie;
+			packageProductDependencies = (
+				3C4EEA13D97C00FF3E00BCD7 /* LiveKit */,
+			);
+			productName = Walkie;
+			productReference = 13034F8EBDD09901390F84B4 /* Walkie.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F48563315A4731DBE0E95F5A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1630;
+				TargetAttributes = {
+					7F3D84AD658C46175C12CA5B = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					D16DDDD7703182373C2E5DDE = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 4F77325DAA665CD56D75CC55 /* Build configuration list for PBXProject "Walkie" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = AD40DE260A6A6C2374F1C667;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				BBB6C524BB017C06523C8579 /* XCRemoteSwiftPackageReference "client-sdk-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = B43025AB9F4B51E0E0A22C56 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D16DDDD7703182373C2E5DDE /* Walkie */,
+				7F3D84AD658C46175C12CA5B /* WalkieTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		62AE1FCD2CE1221661342F0E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				67291C1181B1F2F339D6468C /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		50AE4E4697E0284BB92EF693 /* Check Xcode project is current */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Check Xcode project is current";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"$SRCROOT/scripts/check-project.sh\"";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		28B1AA67AB3913A86B4760C8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C4256BA879A51741ADB912BD /* Fakes.swift in Sources */,
+				FA6DB19007E4BC3AF2DBBEE5 /* PolishTests.swift in Sources */,
+				17EEA4A9AB0304C95699AF41 /* ProtocolTests.swift in Sources */,
+				FAC502D0428C0688E27BC2B8 /* TalkControllerTests.swift in Sources */,
+				99A88CD656F26305ECFC7CEA /* TunerTests.swift in Sources */,
+				6849E9ABC825CAA49E24A362 /* WalkieTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D26F3F12F164900374040811 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C30084D389BE9AB5A41869C /* AppDependencies+Live.swift in Sources */,
+				2F58B5D8166403F26C6B1C47 /* AppModel.swift in Sources */,
+				A0240BD2269A738181F09EA6 /* AudioSessionController.swift in Sources */,
+				E8352D511C111B88C3F26B32 /* ChannelSession.swift in Sources */,
+				6A86D1F5FB255D0C9A993091 /* Copy.swift in Sources */,
+				EE3CD11924085D99E30919AB /* DebugSettings.swift in Sources */,
+				02A2116403B0AA0BB2749520 /* DebugSettingsView.swift in Sources */,
+				BE234A71A7E0B6C8E7193586 /* DetentHaptics.swift in Sources */,
+				5755DE2DB5A6703E1C3C3C25 /* DialMotion.swift in Sources */,
+				2CC2F01CA5552870FB2B577C /* DisplayName.swift in Sources */,
+				C05CFA9D5AD8EA7DBEAAB0DC /* FlashLine.swift in Sources */,
+				7BA14FF6224B66CC123448F4 /* LiveKitTransport.swift in Sources */,
+				415836F755A82802E9E1F0AD /* LiveKitURL.swift in Sources */,
+				775EF3B480FACD404B80231F /* LiveTalkServices.swift in Sources */,
+				AFFB84F7AE281623ACA26B6D /* OnboardingView.swift in Sources */,
+				D746A3BEC006982C318F46A1 /* ProfileStore.swift in Sources */,
+				EFD0C369CB67AAD336380FEA /* Protocol.swift in Sources */,
+				EAB4FF02F39ED6EEEFCB9FA5 /* PushToTalkButton.swift in Sources */,
+				7699C15FE2C756F2ADAD9068 /* RadioShellView.swift in Sources */,
+				A0B976179DE7AFE7F30739BA /* RadioSoundEngine.swift in Sources */,
+				E95BAE1A518098E7F30421D6 /* ReportController.swift in Sources */,
+				A53A9D4B2D2CAE090C1B9C8E /* RoomTransport.swift in Sources */,
+				2428936C6472E17BA9E4BB5F /* RootView.swift in Sources */,
+				DB0C4E63738F5DD6314C2C82 /* SoundBed.swift in Sources */,
+				FB31DDFE9ED3FC63D5DCEBD8 /* StationDial.swift in Sources */,
+				756348A22CB6BBD6C2D986B9 /* Stations.swift in Sources */,
+				AB40424790DE83F07F0CECF2 /* TalkController.swift in Sources */,
+				34E5B4F54DB86518DDE19E68 /* Theme.swift in Sources */,
+				F9C9B1CDF75870C4D32B9824 /* ToneSynth.swift in Sources */,
+				A3A14A60EE65EF038745F9E6 /* TuneInView.swift in Sources */,
+				F62E248CE79CAC5ABDCA0FBD /* Tuner.swift in Sources */,
+				013C668A103DD96AAB4C6FE6 /* WalkieAPI.swift in Sources */,
+				9FFB421BF80A9B8FC047C86E /* WalkieApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A4A7563D22AB00BB704E83BD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D16DDDD7703182373C2E5DDE /* Walkie */;
+			targetProxy = 4473806E6CE9D117170A15ED /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1CECDDC453B8591799BAB65A /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 53336961586F31F9F36E3FFF /* Release.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		59BCC30A0A162DFCDC19B485 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER_BASE).tests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Walkie.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Walkie";
+			};
+			name = Debug;
+		};
+		5A9A905FBE6EAC081C0BA9CC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER_BASE).tests";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Walkie.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Walkie";
+			};
+			name = Release;
+		};
+		B66DE6FBA98196F47331D65C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 34392AFA2645D9BA8EA72C59 /* Debug.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B9FBFC40E76B4ABA5A8CDDD7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Walkie/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER_BASE)";
+				PRODUCT_NAME = Walkie;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E9F7604F16444E41CEBBD9DE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Walkie/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER_BASE)";
+				PRODUCT_NAME = Walkie;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		4F77325DAA665CD56D75CC55 /* Build configuration list for PBXProject "Walkie" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B66DE6FBA98196F47331D65C /* Debug */,
+				1CECDDC453B8591799BAB65A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		603EA82EEA259D3BFC98A90A /* Build configuration list for PBXNativeTarget "WalkieTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				59BCC30A0A162DFCDC19B485 /* Debug */,
+				5A9A905FBE6EAC081C0BA9CC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DAC57F7171E70437DE4D1EC8 /* Build configuration list for PBXNativeTarget "Walkie" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B9FBFC40E76B4ABA5A8CDDD7 /* Debug */,
+				E9F7604F16444E41CEBBD9DE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		BBB6C524BB017C06523C8579 /* XCRemoteSwiftPackageReference "client-sdk-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/livekit/client-sdk-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.7.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3C4EEA13D97C00FF3E00BCD7 /* LiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BBB6C524BB017C06523C8579 /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
+			productName = LiveKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = F48563315A4731DBE0E95F5A /* Project object */;
+}
