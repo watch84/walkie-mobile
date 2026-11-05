@@ -25,6 +25,13 @@ enum Copy {
         static let offAir = "Channel off air"
         static let onAir = "On air"
         static let quiet = "Quiet"
+        static let comingSoon = "Coming soon"
+        static let dialLabel = "Station"
+        static func dialValue(_ station: Station) -> String {
+            station.isLocked
+                ? "\(station.frequency), \(station.name), \(comingSoon)"
+                : "\(station.frequency), \(station.name)"
+        }
         static func listeners(_ count: Int) -> String { count == 1 ? "1 listening" : "\(count) listening" }
     }
 
@@ -35,6 +42,8 @@ enum Copy {
         static let busy = "Channel busy"
         static let offAir = "Channel off air"
         static let tuning = "Tuning in…"
+        static let locked = "Coming soon"
+        static let noSignal = "No signal"
         static let hint = "Hold to talk. Release to listen."
 
         static let micBlocked = "Microphone blocked. Allow it in Settings."

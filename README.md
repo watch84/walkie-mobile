@@ -2,7 +2,7 @@
 
 The native iOS client for [Walkie](https://github.com/watch84/walkie). It's written in SwiftUI and talks to the same backend as the web app.
 
-**Status: Milestone 3 (push to talk).** After "Tap to tune in", the app joins the channel's LiveKit room and plays whoever is talking. Holding the big button takes the floor and publishes your microphone, so people in the web app hear you. Floor state, the current speaker, and the On Air light all come from the server's room metadata. You can pick one of the three live channels with a temporary picker; the dial, static, and room tone arrive in M4.
+**Status: Milestone 4 (dial, sounds, haptics).** After "Tap to tune in", a horizontal station dial covers the 12 stations from the web app: 3 live channels (92.9, 94.5, 96.1) and 9 locked "Coming soon" stations. When the dial rests on a live station for 300 ms, the app joins that channel's LiveKit room. Locked stations never touch the network. Holding the big button takes the floor and publishes your microphone. Static plays while tuning or on a locked station, soft room tone plays while a live channel is quiet, and the dial ticks with a light haptic on every station. Mute, Report, and visual polish come in M5.
 
 ## Requirements
 
@@ -114,12 +114,32 @@ The Simulator uses loopback and usually isn't affected by the firewall. A physic
 
    Web window B should behave the same way. That's your control.
 5. Release push-to-talk. On iOS, the light goes off and the status returns to **Live**. This also happens when the 30-second floor limit is reached.
-6. Switch to channel 2 or 3 with the buttons at the top. The app leaves the current room and joins the new one.
-7. Stop the backend. The app shows **No signal** and retries every 10 seconds, then rejoins when the backend is back. If the channel goes off air, either as a 403 `off_air` from `/token` or as `offAir: true` in the room metadata while connected, the app leaves the room, shows **Channel off air**, and retries every 10 seconds.
+6. Turn the dial to 94.5 or 96.1. The app leaves the current room and joins the new one once the dial rests.
+7. Stop the backend. The room drops, and the app shows **Tuning in…** and retries every 2 seconds. While `/token` can't be reached, it shows **No signal** and keeps retrying every 2 seconds, then rejoins when the backend is back. If the channel goes off air, either as a 403 `off_air` from `/token` or as `offAir: true` in the room metadata while connected, the app leaves the room, shows **Channel off air**, and retries every 10 seconds.
 
 On a physical iPhone, use the LAN IP for `LIVEKIT_PUBLIC_URL` and the two Debug settings URLs, and allow Local Network access when iOS asks.
 
 Logs: in Console.app, filter on subsystem `com.watch84.walkie` (categories `session` and `audio`).
+
+## Verify: dial, tuning rules, sounds (M4)
+
+Start the backend and run the app as in the sections above. Turn the Mac volume up so you can hear the beds.
+
+1. **Tune in.** The dial starts on **92.9 Channel 1**, or the station you last rested on, which is saved as `walkie:station`. The status line reads **Tuning in…** over static, then **Live**. Once the channel is quiet, the static gives way to soft room tone.
+2. **Drag slowly left onto 97.7 Lo-Fi Desk.**
+   - Each station you pass gives a click, and a light haptic on a device.
+   - The readout shows a lock and the station name, and the status line reads **Coming soon**.
+   - The talk button reads **Coming soon** and does nothing.
+   - You hear static.
+   - The Channel 1 room is left immediately. Web windows see the listener count drop.
+   - The backend log should show **no** `/token` request for the locked station.
+3. **Flick hard from 88.1 toward 105.7.** The dial coasts, rubber-bands past the end, and bounces back onto 105.7. Dragging past either end resists and springs back.
+4. **Fast scroll across the live stations** (for example, flick from 88.1 so it passes 92.9–96.1 and stops on 96.1). The backend should log exactly **one** `/token` request, for `channel-3`, about 300 ms after the dial stops. Passing over 92.9 and 94.5 doesn't connect.
+5. **Rest on 94.5 Channel 2.** You hear static and **Tuning in…**, then **Live** and room tone. A web window on Channel 2 sees you join.
+6. **Talk from the web window on that channel.** The room tone stops while the floor is held and you hear the speaker. It comes back after they release. Holding the iOS button also silences the bed while you talk.
+7. **Off air:** take the channel off air. The status line reads **Channel off air** with silence, and the app retries every 10 seconds. If a connected room drops for another reason, the app shows **Tuning in…** with static and retries after 2 seconds.
+8. **VoiceOver:** the dial is an adjustable element. Swipe up or down to move one station. The value is read as "92.9, Channel 1", or "88.1, Morning Static, Coming soon".
+9. **Reduce Motion** (Settings > Accessibility > Motion): a flick settles on the nearest station without coasting.
 
 ## Verify: iOS push-to-talk, heard on the web
 
@@ -167,12 +187,12 @@ project.yml                 XcodeGen spec (source of truth for the Xcode project
 Configs/                    xcconfigs; Local.xcconfig (ignored) for signing
 scripts/generate.sh         xcodegen generate [+ open]
 Walkie/App/                 App entry, root phase switch
-Walkie/Models/              @Observable models: AppModel (+ AppDependencies), ProfileStore, DebugSettings; DisplayName rules
+Walkie/Models/              @Observable models: AppModel (+ AppDependencies), ProfileStore, DebugSettings; DisplayName rules; Stations (stations.ts)
 Walkie/Networking/          protocol.ts mirror (Codable), HTTPWalkieAPI, LiveKit URL resolution
-Walkie/Session/             ChannelSession (join/retry/metadata), TalkController (push-to-talk), RoomTransport abstraction
-Walkie/Live/                Apple-only: LiveKitTransport, AVAudioSession, mic permission, chirps, live dependencies
-Walkie/Features/            Onboarding (name + tune in), Radio (status + hold-to-talk), Debug settings
-Walkie/Support/             Copy (all user-facing strings), Theme
+Walkie/Session/             Tuner (tuner.ts: debounce, locked, retries), ChannelSession (one room + metadata), TalkController (push-to-talk), RoomTransport
+Walkie/Live/                Apple-only: LiveKitTransport, AVAudioSession, mic permission, chirps, RadioSoundEngine (beds + click), haptics
+Walkie/Features/            Onboarding (name + tune in), Radio (StationDial, readout, status, hold-to-talk), Debug settings
+Walkie/Support/             Copy (all user-facing strings), Theme, DialMotion (motion.ts), SoundBed rules, ToneSynth
 WalkieTests/                Swift Testing unit tests
 ```
 

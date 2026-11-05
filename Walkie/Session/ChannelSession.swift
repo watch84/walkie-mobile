@@ -1,31 +1,24 @@
 import Foundation
 import Observation
 
-/// Connection to one channel: fetches a token, joins the room, and mirrors the server's room
-/// metadata. Floor state comes only from `RoomMeta`, never from local guesses. Push-to-talk
-/// (`TalkController`) publishes through this session once the server grants `canPublish`.
+/// One room connection, opened and closed by `Tuner` (the web client's `openSession`). Mirrors the
+/// server's room metadata: floor state comes only from `RoomMeta`, never from local guesses.
+/// Push-to-talk (`TalkController`) publishes through it once the server grants `canPublish`.
 @MainActor
 @Observable
 final class ChannelSession {
-    enum Phase: Equatable, Sendable {
-        case idle
-        case tuningIn
-        case live
-        case reconnecting
-        case noSignal
+    enum EndReason: Equatable, Sendable {
+        /// Fresh room metadata said `offAir: true`.
         case offAir
+        case disconnected(String?)
     }
 
-    struct Endpoint {
-        let api: any WalkieAPIClient
-        let liveKitFallback: URL?
+    enum OpenError: Error, Equatable {
+        /// `close()` (or another `open`) superseded this one while it was connecting.
+        case superseded
     }
 
-    typealias EndpointProvider = @MainActor () -> Endpoint?
-
-    enum JoinError: Error, Equatable {
-        case misconfigured
-        case noLiveKitURL
+    enum MicError: Error, Equatable {
         case notConnected
     }
 
@@ -37,21 +30,29 @@ final class ChannelSession {
         case roomReset
     }
 
-    private(set) var phase: Phase = .idle
-    private(set) var channel: ChannelInfo = .defaultChannel
-    private(set) var name: String?
+    private(set) var channel: ChannelInfo?
+    private(set) var isOpen = false
+    private(set) var isReconnecting = false
     private(set) var meta: RoomMeta?
     private(set) var listenerCount: Int?
     private(set) var speakingIdentities: Set<String> = []
-    /// Token identity plus the channel this session asked for (the server doesn't echo it).
+    /// Token identity plus the channel that was requested (the server doesn't echo it).
     private(set) var credentials: FloorCredentials?
     /// Server-granted publish permission for this device (floor holder only).
     private(set) var canPublish = false
-    private(set) var lastError: String?
 
     /// The API client the current room was joined with, for floor requests.
     @ObservationIgnored private(set) var api: (any WalkieAPIClient)?
     @ObservationIgnored var onTalkSignal: (@MainActor (TalkSignal) -> Void)?
+    /// Called when an open room ends on its own (never for `close()`).
+    @ObservationIgnored var onEnded: (@MainActor (EndReason) -> Void)?
+
+    var floor: FloorHolder? { meta?.floor }
+
+    var isFloorHolderSpeaking: Bool {
+        guard let floor else { return false }
+        return speakingIdentities.contains(floor.identity)
+    }
 
     var isFloorHeldByMe: Bool {
         guard let floor, let credentials else { return false }
@@ -63,121 +64,73 @@ final class ChannelSession {
         return floor.identity != credentials?.identity
     }
 
-    var floor: FloorHolder? { meta?.floor }
-
-    var isFloorHolderSpeaking: Bool {
-        guard let floor else { return false }
-        return speakingIdentities.contains(floor.identity)
-    }
-
-    /// True while joined, joining, or retrying `channel` as `name`.
-    func isTuned(to channel: ChannelInfo, as name: String) -> Bool {
-        phase != .idle && self.channel == channel && self.name == name
-    }
-
     @ObservationIgnored private let makeTransport: @MainActor () -> any RoomTransport
-    @ObservationIgnored private let retryDelay: Duration
-    @ObservationIgnored private var endpoint: EndpointProvider?
     @ObservationIgnored private var transport: (any RoomTransport)?
-    @ObservationIgnored private var task: Task<Void, Never>?
-    /// Bumped on every (re)tune so callbacks from superseded attempts are dropped.
+    /// Bumped on every open/close so callbacks from superseded rooms are dropped.
     @ObservationIgnored private var generation = 0
 
-    init(retryDelay: Duration = .seconds(10), makeTransport: @escaping @MainActor () -> any RoomTransport) {
-        self.retryDelay = retryDelay
+    init(makeTransport: @escaping @MainActor () -> any RoomTransport) {
         self.makeTransport = makeTransport
     }
 
-    func tune(to channel: ChannelInfo, name: String, endpoint: @escaping EndpointProvider) {
-        self.channel = channel
-        self.name = name
-        self.endpoint = endpoint
-        restart(afterDelay: false)
-    }
-
-    func setMicrophone(enabled: Bool) async throws {
-        guard let transport else {
-            if enabled { throw JoinError.notConnected }
-            return
-        }
-        try await transport.setMicrophone(enabled: enabled)
-    }
-
-    func stop() async {
-        generation += 1
-        task?.cancel()
-        task = nil
-        let old = transport
-        transport = nil
-        resetRoomState()
-        phase = .idle
-        await old?.disconnect()
-    }
-
-    private func restart(afterDelay: Bool) {
+    /// Connects to `url` with `token`. Throws `WalkieAPIError.offAir` if the room is already off
+    /// air, or `OpenError.superseded` if `close()` was called meanwhile.
+    func open(token: TokenResponse, channel: ChannelInfo, url: URL, api: any WalkieAPIClient) async throws {
+        await close()
         generation += 1
         let gen = generation
-        task?.cancel()
-        let old = transport
-        transport = nil
-        resetRoomState()
-        if !afterDelay { phase = .tuningIn }
+        self.channel = channel
 
-        task = Task { [weak self, retryDelay] in
-            await old?.disconnect()
-            if afterDelay {
-                do { try await Task.sleep(for: retryDelay) } catch { return }
-            }
-            await self?.joinLoop(gen)
-        }
-    }
-
-    private func joinLoop(_ gen: Int) async {
-        while gen == generation, !Task.isCancelled {
-            do {
-                try await join(gen)
-                return
-            } catch {
-                guard gen == generation, !Task.isCancelled else { return }
-                if case WalkieAPIError.offAir = error {
-                    phase = .offAir
-                } else {
-                    phase = .noSignal
-                }
-                lastError = String(describing: error)
-            }
-            do { try await Task.sleep(for: retryDelay) } catch { return }
-        }
-    }
-
-    private func join(_ gen: Int) async throws {
-        guard let endpoint = endpoint?(), let name else { throw JoinError.misconfigured }
-        let channelID = channel.id
-        let token = try await endpoint.api.token(channel: channelID, name: name)
-        guard gen == generation else { throw CancellationError() }
-        guard let url = LiveKitURL.resolve(token.url, fallback: endpoint.liveKitFallback) else {
-            throw JoinError.noLiveKitURL
-        }
-
-        // Each room connection starts its own `seq` sequence.
-        resetRoomState()
         let room = makeTransport()
-        try await room.connect(url: url, token: token.token) { [weak self] event in
-            self?.handle(event, gen: gen)
+        do {
+            try await room.connect(url: url, token: token.token) { [weak self] event in
+                self?.handle(event, gen: gen)
+            }
+        } catch {
+            guard gen == generation else { throw OpenError.superseded }
+            resetRoomState()
+            throw error
         }
-        guard gen == generation, !Task.isCancelled else {
+        guard gen == generation else {
             await room.disconnect()
-            throw CancellationError()
+            throw OpenError.superseded
         }
         if meta?.offAir == true {
+            resetRoomState()
             await room.disconnect()
             throw WalkieAPIError.offAir
         }
         transport = room
-        api = endpoint.api
-        credentials = token.floorCredentials(channel: channelID)
-        lastError = nil
-        phase = .live
+        self.api = api
+        credentials = token.floorCredentials(channel: channel.id)
+        isOpen = true
+    }
+
+    func close() async {
+        await detach()?.disconnect()
+    }
+
+    /// Drops the room immediately (state reset, push-to-talk told); the disconnect finishes in
+    /// the background.
+    func closeNow() {
+        guard let old = detach() else { return }
+        Task { await old.disconnect() }
+    }
+
+    private func detach() -> (any RoomTransport)? {
+        generation += 1
+        let old = transport
+        transport = nil
+        resetRoomState()
+        return old
+    }
+
+    func setMicrophone(enabled: Bool) async throws {
+        guard let transport else {
+            if enabled { throw MicError.notConnected }
+            return
+        }
+        try await transport.setMicrophone(enabled: enabled)
     }
 
     private func handle(_ event: RoomEvent, gen: Int) {
@@ -188,11 +141,8 @@ final class ChannelSession {
             let floorChanged = incoming.floor != meta?.floor
             meta = incoming
             if floorChanged { onTalkSignal?(.floorChanged(incoming.floor)) }
-            // While joining, `join` checks `offAir` itself once connect returns.
-            if incoming.offAir, transport != nil {
-                phase = .offAir
-                restart(afterDelay: true)
-            }
+            // While connecting, `open` checks `offAir` itself once connect returns.
+            if incoming.offAir, isOpen { end(.offAir) }
         case .participantCount(let count):
             listenerCount = count
         case .speaking(let identities):
@@ -202,25 +152,32 @@ final class ChannelSession {
             canPublish = allowed
             onTalkSignal?(.canPublish(allowed))
         case .reconnecting:
-            if transport != nil { phase = .reconnecting }
+            if isOpen { isReconnecting = true }
         case .reconnected:
-            if transport != nil { phase = .live }
+            isReconnecting = false
         case .disconnected(let reason):
-            // Failures during connect surface as thrown errors in `join`; only react once live.
-            guard transport != nil else { return }
-            lastError = reason
-            phase = .noSignal
-            restart(afterDelay: true)
+            // Failures while connecting surface as errors thrown from `open`.
+            guard isOpen else { return }
+            end(.disconnected(reason))
         }
     }
 
+    private func end(_ reason: EndReason) {
+        closeNow()
+        onEnded?(reason)
+    }
+
     private func resetRoomState() {
+        let hadRoom = isOpen || channel != nil
+        isOpen = false
+        isReconnecting = false
         meta = nil
         listenerCount = nil
         speakingIdentities = []
         credentials = nil
         api = nil
         canPublish = false
-        onTalkSignal?(.roomReset)
+        channel = nil
+        if hadRoom { onTalkSignal?(.roomReset) }
     }
 }

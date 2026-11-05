@@ -11,15 +11,6 @@ enum WalkieProtocol {
     }
 }
 
-struct ChannelInfo: Identifiable, Hashable, Sendable {
-    let id: String
-    let number: Int
-    var name: String { "Channel \(number)" }
-
-    static let live: [ChannelInfo] = (1...3).map { ChannelInfo(id: "channel-\($0)", number: $0) }
-    static let defaultChannel = live[0]
-}
-
 struct TokenRequest: Codable, Equatable, Sendable {
     let channel: String
     let name: String

@@ -36,7 +36,9 @@ final class TalkController {
 
     /// What the button shows.
     enum ButtonState: Equatable, Sendable {
+        case locked
         case tuning
+        case noSignal
         case offAir
         case busy
         case ready
@@ -74,14 +76,19 @@ final class TalkController {
         case .keying, .requestingPermission: return .keying
         case .idle: break
         }
-        switch session.phase {
+        switch tuner.phase {
+        case .locked: return .locked
         case .offAir: return .offAir
-        case .live: return session.isFloorHeldByOther ? .busy : .ready
-        default: return .tuning
+        case .error: return .noSignal
+        case .idle, .tuning: return .tuning
+        case .live:
+            guard session.isOpen, !session.isReconnecting else { return .tuning }
+            return session.isFloorHeldByOther ? .busy : .ready
         }
     }
 
-    @ObservationIgnored private let session: ChannelSession
+    @ObservationIgnored private let tuner: Tuner
+    @ObservationIgnored private var session: ChannelSession { tuner.session }
     @ObservationIgnored private let microphone: any MicrophoneAuthorizing
     @ObservationIgnored private let chirps: any ChirpPlaying
     @ObservationIgnored private let grantTimeout: Duration
@@ -97,20 +104,20 @@ final class TalkController {
     @ObservationIgnored private var flashTask: Task<Void, Never>?
 
     init(
-        session: ChannelSession,
+        tuner: Tuner,
         microphone: any MicrophoneAuthorizing,
         chirps: any ChirpPlaying,
         grantTimeout: Duration = TalkController.defaultGrantTimeout,
         flashDuration: Duration = .seconds(2.5),
         now: @escaping @MainActor () -> Date = { Date() }
     ) {
-        self.session = session
+        self.tuner = tuner
         self.microphone = microphone
         self.chirps = chirps
         self.grantTimeout = grantTimeout
         self.flashDuration = flashDuration
         self.now = now
-        session.onTalkSignal = { [weak self] signal in self?.handle(signal) }
+        tuner.session.onTalkSignal = { [weak self] signal in self?.handle(signal) }
     }
 
     // MARK: Press / release
@@ -121,7 +128,7 @@ final class TalkController {
         case .ready: break
         case .busy: show(.busy); return
         case .offAir: show(.offAir); return
-        case .tuning, .keying, .live: return
+        case .locked, .tuning, .noSignal, .keying, .live: return
         }
         guard let credentials = session.credentials, let api = session.api else { return }
 

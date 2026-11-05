@@ -69,6 +69,8 @@ struct PushToTalkButton: View {
         case .busy: Copy.Talk.busy
         case .offAir: Copy.Talk.offAir
         case .tuning: Copy.Talk.tuning
+        case .locked: Copy.Talk.locked
+        case .noSignal: Copy.Talk.noSignal
         }
     }
 

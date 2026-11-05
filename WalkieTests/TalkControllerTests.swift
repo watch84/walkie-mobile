@@ -9,6 +9,7 @@ final class TalkHarness {
     let microphone: FakeMicrophone
     let chirps = FakeChirps()
     let session: ChannelSession
+    let tuner: Tuner
     let talk: TalkController
     let creds = makeToken().floorCredentials(channel: "channel-1")
 
@@ -19,9 +20,10 @@ final class TalkHarness {
     ) {
         api = FakeAPI([.success(makeToken())], floor: floor)
         self.microphone = microphone
-        session = ChannelSession(retryDelay: .milliseconds(20)) { [factory] in factory.make() }
+        session = ChannelSession { [factory] in factory.make() }
+        tuner = Tuner(session: session, timing: fastTiming)
         talk = TalkController(
-            session: session,
+            tuner: tuner,
             microphone: microphone,
             chirps: chirps,
             grantTimeout: grantTimeout,
@@ -32,10 +34,10 @@ final class TalkHarness {
     var room: FakeTransport { factory.last! }
 
     func tuneIn() async {
-        session.tune(to: .defaultChannel, name: "Ada") { [api] in
-            ChannelSession.Endpoint(api: api, liveKitFallback: URL(string: "ws://127.0.0.1:7880"))
+        tuner.start(name: "Ada") { [api] in
+            Tuner.Endpoint(api: api, liveKitFallback: URL(string: "ws://127.0.0.1:7880"))
         }
-        _ = await waitUntil { self.session.phase == .live }
+        _ = await waitUntil { self.tuner.phase == .live }
     }
 
     func floorCalls() async -> [FloorCall] { await api.floorCalls }
@@ -211,6 +213,7 @@ struct TalkControllerTests {
         await h.goLive()
 
         h.room.emit(.disconnected("gone"))
+        #expect(h.tuner.phase == .tuning)
         #expect(h.talk.phase == .idle)
         #expect(h.talk.flash == .transmissionEnded)
         #expect(h.talk.buttonState == .tuning)
@@ -290,6 +293,43 @@ struct TalkControllerTests {
         h.talk.press()
         #expect(h.talk.flash == .offAir)
         #expect(await h.floorCalls().isEmpty)
+    }
+
+    @Test func lockedStationLocksButton() async {
+        let h = TalkHarness()
+        await h.tuneIn()
+        h.tuner.setStation(0)
+        #expect(h.talk.buttonState == .locked)
+        h.talk.press()
+        #expect(h.talk.phase == .idle)
+        #expect(h.talk.flash == nil)
+        #expect(await h.floorCalls().isEmpty)
+    }
+
+    @Test func movingDialWhileLiveEndsTransmission() async {
+        let h = TalkHarness()
+        await h.tuneIn()
+        await h.goLive()
+        h.tuner.setStation(stationIndex("channel-2"))
+        #expect(h.talk.phase == .idle)
+        #expect(h.talk.buttonState == .tuning)
+        #expect(await eventually { await h.floorCalls() == [.request(h.creds), .release(h.creds)] })
+    }
+
+    @Test func tunerErrorShowsNoSignal() async {
+        let h = TalkHarness()
+        h.tuner.start(name: "Ada") { nil }
+        #expect(await waitUntil { h.talk.buttonState == .noSignal })
+        await h.tuner.stop()
+    }
+
+    @Test func reconnectingShowsTuning() async {
+        let h = TalkHarness()
+        await h.tuneIn()
+        h.room.emit(.reconnecting)
+        #expect(h.talk.buttonState == .tuning)
+        h.room.emit(.reconnected)
+        #expect(h.talk.buttonState == .ready)
     }
 
     @Test func pressWhileAlreadyGrantedGoesLiveWithoutWaiting() async {

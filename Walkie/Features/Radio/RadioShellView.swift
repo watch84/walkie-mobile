@@ -1,76 +1,74 @@
 import SwiftUI
 
-/// Radio screen: channel status plus hold-to-talk. The dial (M4) replaces the channel buttons.
+/// Radio screen: frequency readout, station dial, channel status and hold-to-talk.
 struct RadioShellView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        let tuner = model.tuner
         let session = model.session
+        let station = model.station
 
         VStack(spacing: 0) {
-            ChannelPicker(selected: model.selectedChannel) { model.select($0) }
-                .padding(.top, 20)
+            OnAirLight(isAvailable: tuner.phase == .live && session.meta != nil, isOnAir: session.floor != nil)
+                .padding(.top, 24)
 
-            Spacer()
+            Spacer(minLength: 12)
 
-            VStack(spacing: 18) {
-                OnAirLight(isAvailable: session.meta != nil, isOnAir: session.floor != nil)
+            StationReadout(station: station)
 
-                Text(model.selectedChannel.name)
-                    .font(Theme.mono(34))
-                    .foregroundStyle(Theme.text)
+            StationDial(index: station.index)
+                .padding(.top, 18)
 
-                TickRow()
-                    .frame(height: 34)
-                    .padding(.horizontal, 28)
-
-                StatusLine(session: session)
+            VStack(spacing: 8) {
+                StatusLine(tuner: tuner, session: session)
                     .frame(minHeight: 24)
 
-                Text(session.phase == .live ? session.listenerCount.map(Copy.Radio.listeners) ?? " " : " ")
+                Text(tuner.phase == .live ? session.listenerCount.map(Copy.Radio.listeners) ?? " " : " ")
                     .font(Theme.mono(12))
                     .foregroundStyle(Theme.dim)
                     .accessibilityIdentifier("listenerCount")
             }
+            .padding(.top, 14)
 
-            Spacer()
+            Spacer(minLength: 12)
 
             PushToTalkButton(talk: model.talk)
-                .padding(.bottom, 24)
+                .padding(.bottom, 20)
 
             if let name = model.profile.displayName {
                 Button(Copy.Radio.you(name)) { model.editName() }
                     .font(Theme.mono(12))
                     .foregroundStyle(Theme.dim)
-                    .padding(.bottom, 32)
+                    .padding(.bottom, 28)
                     .accessibilityIdentifier("editNameButton")
             }
         }
     }
 }
 
-private struct ChannelPicker: View {
-    let selected: ChannelInfo
-    let onSelect: (ChannelInfo) -> Void
+private struct StationReadout: View {
+    let station: Station
 
     var body: some View {
-        HStack(spacing: 12) {
-            ForEach(ChannelInfo.live) { channel in
-                let isSelected = channel == selected
-                Button {
-                    onSelect(channel)
-                } label: {
-                    Text("\(channel.number)")
-                        .font(Theme.mono(15, weight: .medium))
-                        .foregroundStyle(isSelected ? Theme.amber : Theme.dim)
-                        .frame(width: 44, height: 44)
-                        .overlay(Circle().stroke(isSelected ? Theme.amber : Theme.faint, lineWidth: 1))
+        VStack(spacing: 6) {
+            Text(station.frequency)
+                .font(Theme.mono(44))
+                .foregroundStyle(station.isLocked ? Theme.dim : Theme.text)
+                .monospacedDigit()
+                .contentTransition(.numericText())
+            HStack(spacing: 6) {
+                if station.isLocked {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 11))
                 }
-                .accessibilityLabel(channel.name)
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
-                .accessibilityIdentifier("channelButton-\(channel.number)")
+                CapsLabel(text: station.name, size: 12, color: station.isLocked ? Theme.dim : Theme.text)
             }
         }
+        .animation(.easeOut(duration: 0.12), value: station)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Copy.Radio.dialValue(station))
+        .accessibilityIdentifier("stationReadout")
     }
 }
 
@@ -95,19 +93,24 @@ private struct OnAirLight: View {
 }
 
 private struct StatusLine: View {
+    let tuner: Tuner
     let session: ChannelSession
 
     var body: some View {
         HStack(spacing: 10) {
-            switch session.phase {
-            case .idle, .tuningIn, .reconnecting:
+            switch tuner.phase {
+            case .idle, .tuning:
                 status(Copy.Radio.tuningIn)
-            case .noSignal:
+            case .locked:
+                status(Copy.Radio.comingSoon)
+            case .error:
                 status(Copy.Radio.noSignal)
             case .offAir:
                 status(Copy.Radio.offAir)
             case .live:
-                if let floor = session.floor {
+                if session.isReconnecting {
+                    status(Copy.Radio.tuningIn)
+                } else if let floor = session.floor {
                     PulseDot(pulsing: session.isFloorHolderSpeaking)
                     Text(floor.name)
                         .font(Theme.mono(16, weight: .medium))
@@ -141,26 +144,6 @@ private struct PulseDot: View {
                 .frame(width: 10, height: 10)
                 .scaleEffect(1 + 0.3 * k)
                 .shadow(color: Theme.amber.opacity(0.4 + 0.5 * k), radius: 3 + 9 * k)
-        }
-        .accessibilityHidden(true)
-    }
-}
-
-/// Static, inert stand-in for the dial's tick marks.
-private struct TickRow: View {
-    var body: some View {
-        GeometryReader { geo in
-            let count = 17
-            let spacing = geo.size.width / CGFloat(count - 1)
-            ZStack(alignment: .leading) {
-                ForEach(0..<count, id: \.self) { i in
-                    let distance = abs(CGFloat(i) - CGFloat(count - 1) / 2) / (CGFloat(count - 1) / 2)
-                    Capsule()
-                        .fill(Theme.text.opacity(0.65 - 0.4 * distance))
-                        .frame(width: 2, height: geo.size.height * (1 - 0.35 * distance))
-                        .position(x: CGFloat(i) * spacing, y: geo.size.height / 2)
-                }
-            }
         }
         .accessibilityHidden(true)
     }

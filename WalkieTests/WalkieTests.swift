@@ -116,6 +116,8 @@ final class AppHarness {
     let api: FakeAPI
     let microphone = FakeMicrophone()
     let chirps = FakeChirps()
+    let sounds = FakeSounds()
+    let haptics = FakeHaptics()
     private(set) var audioActivations = 0
     private(set) var apiBaseURLs: [URL] = []
 
@@ -130,7 +132,9 @@ final class AppHarness {
             activateAudio: { [self] in audioActivations += 1 },
             microphone: { [microphone] in microphone },
             chirps: { [chirps] in chirps },
-            retryDelay: .milliseconds(20),
+            sounds: { [sounds] in sounds },
+            haptics: { [haptics] in haptics },
+            tunerTiming: fastTiming,
             grantTimeout: .milliseconds(100)
         )
     }
@@ -160,7 +164,7 @@ struct AppModelTests {
         #expect(model.audioUnlocked)
         #expect(harness.audioActivations == 1)
 
-        #expect(await waitUntil { model.session.phase == .live })
+        #expect(await waitUntil { model.tuner.phase == .live })
         #expect(await harness.api.requests == [TokenRequest(channel: "channel-1", name: "Linus")])
         #expect(harness.apiBaseURLs.first?.absoluteString == "http://127.0.0.1:8787")
         #expect(harness.factory.last?.connectedURL?.absoluteString == "ws://127.0.0.1:7880")
@@ -174,12 +178,12 @@ struct AppModelTests {
         let model = harness.model(defaults)
         #expect(model.phase == .tuneIn)
         #expect(!model.audioUnlocked)
-        #expect(model.session.phase == .idle)
+        #expect(model.tuner.phase == .idle)
 
         model.tuneIn()
         #expect(model.phase == .radio)
         #expect(model.audioUnlocked)
-        #expect(await waitUntil { model.session.phase == .live })
+        #expect(await waitUntil { model.tuner.phase == .live })
     }
 
     @Test func editNameReturnsStraightToRadioAndRejoinsWithNewName() async {
@@ -188,7 +192,7 @@ struct AppModelTests {
         ProfileStore(defaults: defaults).setDisplayName("Margaret")
         let model = harness.model(defaults)
         model.tuneIn()
-        #expect(await waitUntil { model.session.phase == .live })
+        #expect(await waitUntil { model.tuner.phase == .live })
 
         model.editName()
         #expect(model.phase == .naming)
@@ -197,7 +201,7 @@ struct AppModelTests {
         #expect(model.phase == .radio)
         #expect(model.profile.displayName == "Margaret Hamilton")
         #expect(harness.audioActivations == 1)
-        #expect(await waitUntil { harness.factory.made.count == 2 && model.session.phase == .live })
+        #expect(await waitUntil { harness.factory.made.count == 2 && model.tuner.phase == .live })
         #expect(await harness.api.requests.last == TokenRequest(channel: "channel-1", name: "Margaret Hamilton"))
     }
 
@@ -205,7 +209,7 @@ struct AppModelTests {
         let harness = AppHarness()
         let model = harness.model(freshDefaults())
         model.submitName("Ada")
-        #expect(await waitUntil { model.session.phase == .live })
+        #expect(await waitUntil { model.tuner.phase == .live })
 
         model.editName()
         model.submitName("Ada")
@@ -218,19 +222,71 @@ struct AppModelTests {
         let harness = AppHarness()
         let model = harness.model(freshDefaults())
         model.submitName("Ada")
-        #expect(await waitUntil { model.session.phase == .live })
+        #expect(await waitUntil { model.tuner.phase == .live })
 
-        model.select(ChannelInfo.live[2])
-        #expect(model.selectedChannel.id == "channel-3")
-        #expect(await waitUntil { harness.factory.made.count == 2 && model.session.phase == .live })
+        model.selectStation(stationIndex("channel-3"))
+        #expect(model.station.channel?.id == "channel-3")
+        #expect(await waitUntil { harness.factory.made.count == 2 && model.tuner.phase == .live })
         #expect(await harness.api.requests.last == TokenRequest(channel: "channel-3", name: "Ada"))
+    }
+
+    @Test func stationPersistsAndLockedNeverConnects() async {
+        let defaults = freshDefaults()
+        let harness = AppHarness()
+        let model = harness.model(defaults)
+        #expect(model.station.index == Stations.defaultIndex)
+        model.submitName("Ada")
+        #expect(await waitUntil { model.tuner.phase == .live })
+
+        model.selectStation(9)
+        #expect(model.tuner.phase == .locked)
+        #expect(defaults.integer(forKey: "walkie:station") == 9)
+
+        let relaunched = AppHarness().model(defaults)
+        #expect(relaunched.station.name == "Weather Desk")
+        relaunched.tuneIn()
+        #expect(relaunched.tuner.phase == .locked)
+        try? await Task.sleep(for: .milliseconds(60))
+        #expect(relaunched.session.isOpen == false)
+    }
+
+    @Test func bedFollowsPhaseAndFloor() async {
+        let harness = AppHarness()
+        let model = harness.model(freshDefaults())
+        #expect(model.currentBed == .none)
+
+        model.submitName("Ada")
+        #expect(model.currentBed == .staticHiss)
+        #expect(await waitUntil { harness.sounds.beds.last == .roomTone })
+
+        harness.factory.last!.emit(.metadata(metaJSON(seq: 1, floor: ("u-2", "Grace"))))
+        #expect(await waitUntil { harness.sounds.beds.last == SoundBed.none })
+
+        harness.factory.last!.emit(.metadata(metaJSON(seq: 2)))
+        #expect(await waitUntil { harness.sounds.beds.last == .roomTone })
+
+        model.selectStation(0)
+        #expect(await waitUntil { harness.sounds.beds.last == .staticHiss })
+        #expect(harness.sounds.beds == [.staticHiss, .roomTone, .none, .roomTone, .staticHiss])
+    }
+
+    @Test func detentFeedbackClicksOnlyAfterUnlock() {
+        let harness = AppHarness()
+        let model = harness.model(freshDefaults())
+        model.detentCrossed()
+        #expect(harness.haptics.detents == 1)
+        #expect(harness.sounds.clicks == 0)
+        model.submitName("Ada")
+        model.detentCrossed()
+        #expect(harness.haptics.detents == 2)
+        #expect(harness.sounds.clicks == 1)
     }
 
     @Test func backgroundingReleasesTheFloor() async {
         let harness = AppHarness()
         let model = harness.model(freshDefaults())
         model.submitName("Ada")
-        #expect(await waitUntil { model.session.phase == .live })
+        #expect(await waitUntil { model.tuner.phase == .live })
 
         model.talk.press()
         #expect(await waitUntil { model.talk.phase == .keying })
@@ -247,10 +303,10 @@ struct AppModelTests {
         let harness = AppHarness()
         let model = harness.model(freshDefaults())
         model.submitName("Ada")
-        #expect(await waitUntil { model.session.phase == .live })
+        #expect(await waitUntil { model.tuner.phase == .live })
         model.forgetName()
         #expect(model.phase == .naming)
         #expect(model.profile.displayName == nil)
-        #expect(await waitUntil { model.session.phase == .idle })
+        #expect(await waitUntil { model.tuner.phase == .idle })
     }
 }

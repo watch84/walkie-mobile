@@ -8,7 +8,9 @@ extension AppDependencies {
             makeAPI: { HTTPWalkieAPI(baseURL: $0) },
             activateAudio: { AudioSessionController.activate() },
             microphone: { SystemMicrophone() },
-            chirps: { ToneChirps() }
+            chirps: { ToneChirps() },
+            sounds: { RadioSoundEngine() },
+            haptics: { DetentHaptics() }
         )
     }
 }

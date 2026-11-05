@@ -12,6 +12,7 @@ actor FakeAPI: WalkieAPIClient {
     private(set) var requests: [TokenRequest] = []
     private(set) var floorCalls: [FloorCall] = []
     private var floorDelay: Duration = .zero
+    private var tokenDelay: Duration = .zero
 
     init(_ queue: [Result<TokenResponse, WalkieAPIError>], floor: [Result<Void, WalkieAPIError>] = [.success(())]) {
         self.queue = queue
@@ -22,8 +23,13 @@ actor FakeAPI: WalkieAPIClient {
         floorDelay = delay
     }
 
+    func setTokenDelay(_ delay: Duration) {
+        tokenDelay = delay
+    }
+
     func token(channel: String, name: String) async throws -> TokenResponse {
         requests.append(TokenRequest(channel: channel, name: name))
+        if tokenDelay > .zero { try? await Task.sleep(for: tokenDelay) }
         let next = queue.count > 1 ? queue.removeFirst() : queue[0]
         return try next.get()
     }
@@ -77,8 +83,10 @@ final class FakeTransport: RoomTransport {
     private var onEvent: RoomEventHandler?
     var initialMetadata: String?
     var initialCount = 1
+    var connectDelay: Duration = .zero
 
     func connect(url: URL, token: String, onEvent: @escaping RoomEventHandler) async throws {
+        if connectDelay > .zero { try? await Task.sleep(for: connectDelay) }
         connectedURL = url
         self.token = token
         self.onEvent = onEvent
@@ -104,9 +112,11 @@ final class FakeTransport: RoomTransport {
 final class TransportFactory {
     private(set) var made: [FakeTransport] = []
     var configure: (FakeTransport) -> Void = { _ in }
+    var connectDelay: Duration = .zero
 
     func make() -> any RoomTransport {
         let transport = FakeTransport()
+        transport.connectDelay = connectDelay
         configure(transport)
         made.append(transport)
         return transport
@@ -148,4 +158,24 @@ func eventually(timeout: Duration = .seconds(2), _ condition: () async -> Bool) 
         try? await Task.sleep(for: .milliseconds(2))
     }
     return true
+}
+
+@MainActor
+final class FakeSounds: SoundBedPlaying {
+    private(set) var beds: [SoundBed] = []
+    private(set) var clicks = 0
+    func setBed(_ bed: SoundBed) { beds.append(bed) }
+    func playDetentClick() { clicks += 1 }
+}
+
+@MainActor
+final class FakeHaptics: HapticsPlaying {
+    private(set) var detents = 0
+    func detent() { detents += 1 }
+}
+
+let fastTiming = Tuner.Timing(debounce: .milliseconds(30), offAirRetry: .milliseconds(60), retry: .milliseconds(40))
+
+func stationIndex(_ channelID: String) -> Int {
+    Stations.all.firstIndex { $0.channel?.id == channelID }!
 }

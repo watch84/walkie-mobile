@@ -1,6 +1,18 @@
 import Foundation
 import Observation
 
+@MainActor
+protocol SoundBedPlaying: AnyObject {
+    func setBed(_ bed: SoundBed)
+    /// Short tick for a dial detent.
+    func playDetentClick()
+}
+
+@MainActor
+protocol HapticsPlaying: AnyObject {
+    func detent()
+}
+
 /// Platform services `AppModel` uses; `.live` (LiveKit, AVAudioSession, URLSession) is in `Walkie/Live`.
 struct AppDependencies {
     var makeTransport: @MainActor () -> any RoomTransport
@@ -8,7 +20,9 @@ struct AppDependencies {
     var activateAudio: @MainActor () -> Void
     var microphone: @MainActor () -> any MicrophoneAuthorizing
     var chirps: @MainActor () -> any ChirpPlaying
-    var retryDelay: Duration = .seconds(10)
+    var sounds: @MainActor () -> any SoundBedPlaying
+    var haptics: @MainActor () -> any HapticsPlaying
+    var tunerTiming = Tuner.Timing()
     var grantTimeout: Duration = TalkController.defaultGrantTimeout
 }
 
@@ -21,40 +35,53 @@ final class AppModel {
         case radio
     }
 
+    static let stationKey = "walkie:station"
+
     let profile: ProfileStore
     let debug: DebugSettings
-    let session: ChannelSession
+    let tuner: Tuner
     let talk: TalkController
 
-    private(set) var phase: Phase
-    private(set) var selectedChannel: ChannelInfo = .defaultChannel
+    var session: ChannelSession { tuner.session }
+    var station: Station { tuner.station }
 
-    /// Per launch, like the web app's audio unlock; only the name persists. Submitting the
-    /// name screen counts as the unlocking tap, as it does on web.
+    private(set) var phase: Phase
+
+    /// Per launch, like the web app's audio unlock; only the name and station persist.
+    /// Submitting the name screen counts as the unlocking tap, as it does on web.
     private(set) var audioUnlocked = false
 
-    @ObservationIgnored private let dependencies: AppDependencies
+    var currentBed: SoundBed {
+        guard audioUnlocked else { return .none }
+        let talking = talk.phase == .keying || talk.phase == .live
+        return SoundBed.bed(for: tuner.phase, floorHeld: session.floor != nil, talking: talking)
+    }
 
-    init(profile: ProfileStore, debug: DebugSettings, dependencies: AppDependencies) {
-        self.profile = profile
-        self.debug = debug
+    @ObservationIgnored private let dependencies: AppDependencies
+    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let sounds: any SoundBedPlaying
+    @ObservationIgnored private let haptics: any HapticsPlaying
+    @ObservationIgnored private var appliedBed: SoundBed = .none
+
+    init(defaults: UserDefaults = .standard, dependencies: AppDependencies) {
+        self.defaults = defaults
         self.dependencies = dependencies
-        session = ChannelSession(retryDelay: dependencies.retryDelay, makeTransport: dependencies.makeTransport)
+        profile = ProfileStore(defaults: defaults)
+        debug = DebugSettings(defaults: defaults)
+
+        let storedStation = defaults.object(forKey: Self.stationKey) as? Int ?? Stations.defaultIndex
+        let session = ChannelSession(makeTransport: dependencies.makeTransport)
+        tuner = Tuner(session: session, stationIndex: storedStation, timing: dependencies.tunerTiming)
         talk = TalkController(
-            session: session,
+            tuner: tuner,
             microphone: dependencies.microphone(),
             chirps: dependencies.chirps(),
             grantTimeout: dependencies.grantTimeout
         )
+        sounds = dependencies.sounds()
+        haptics = dependencies.haptics()
         phase = profile.hasDisplayName ? .tuneIn : .naming
-    }
-
-    convenience init(defaults: UserDefaults = .standard, dependencies: AppDependencies) {
-        self.init(
-            profile: ProfileStore(defaults: defaults),
-            debug: DebugSettings(defaults: defaults),
-            dependencies: dependencies
-        )
+        observeBed()
     }
 
     @discardableResult
@@ -74,10 +101,16 @@ final class AppModel {
         unlockAndListen()
     }
 
-    func select(_ channel: ChannelInfo) {
-        guard channel != selectedChannel else { return }
-        selectedChannel = channel
-        listen()
+    /// The dial came to rest on, or passed, `index`.
+    func selectStation(_ index: Int) {
+        tuner.setStation(index)
+        defaults.set(tuner.stationIndex, forKey: Self.stationKey)
+    }
+
+    /// The dial crossed a detent while moving.
+    func detentCrossed() {
+        haptics.detent()
+        if audioUnlocked { sounds.playDetentClick() }
     }
 
     func editName() {
@@ -94,7 +127,7 @@ final class AppModel {
         talk.release()
         profile.clearDisplayName()
         phase = .naming
-        Task { await session.stop() }
+        Task { await tuner.stop() }
     }
 
     private func unlockAndListen() {
@@ -103,18 +136,28 @@ final class AppModel {
             audioUnlocked = true
         }
         phase = .radio
-        listen()
-    }
-
-    private func listen() {
         guard let name = profile.displayName else { return }
-        guard !session.isTuned(to: selectedChannel, as: name) else { return }
-        session.tune(to: selectedChannel, name: name) { [weak self] in self?.endpoint() }
+        if tuner.isStarted {
+            tuner.retune(name: name)
+        } else {
+            tuner.start(name: name) { [weak self] in self?.endpoint() }
+        }
     }
 
-    /// Read on every join attempt so Debug settings edits apply on the next retry.
-    private func endpoint() -> ChannelSession.Endpoint? {
+    /// Read on every connect attempt so Debug settings edits apply on the next retry.
+    private func endpoint() -> Tuner.Endpoint? {
         guard let base = debug.apiBaseURLValue else { return nil }
-        return ChannelSession.Endpoint(api: dependencies.makeAPI(base), liveKitFallback: debug.liveKitURLValue)
+        return Tuner.Endpoint(api: dependencies.makeAPI(base), liveKitFallback: debug.liveKitURLValue)
+    }
+
+    private func observeBed() {
+        let bed = withObservationTracking {
+            currentBed
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in self?.observeBed() }
+        }
+        guard bed != appliedBed else { return }
+        appliedBed = bed
+        sounds.setBed(bed)
     }
 }
