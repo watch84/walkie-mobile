@@ -5,6 +5,9 @@ import FoundationNetworking
 
 protocol WalkieAPIClient: Sendable {
     func token(channel: String, name: String) async throws -> TokenResponse
+    /// Takes the channel lock. On success the server grants `canPublish` over LiveKit.
+    func requestFloor(_ credentials: FloorCredentials) async throws
+    func releaseFloor(_ credentials: FloorCredentials) async throws
 }
 
 /// JSON client for the web walkie API server (not the Vite dev server).

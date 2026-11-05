@@ -2,7 +2,7 @@
 
 The native iOS client for [Walkie](https://github.com/watch84/walkie). It's written in SwiftUI and talks to the same backend as the web app.
 
-**Status: Milestone 2 (listen only).** After "Tap to tune in", the app fetches a token from the web walkie API, joins the channel's LiveKit room, and plays whoever is talking. It shows the connection state, the number of listeners, the current speaker, and an On Air light, all driven by the server's room metadata. You can pick one of the three live channels with a temporary picker; the dial arrives in M4. Push-to-talk is a disabled placeholder until M3.
+**Status: Milestone 3 (push to talk).** After "Tap to tune in", the app joins the channel's LiveKit room and plays whoever is talking. Holding the big button takes the floor and publishes your microphone, so people in the web app hear you. Floor state, the current speaker, and the On Air light all come from the server's room metadata. You can pick one of the three live channels with a temporary picker; the dial, static, and room tone arrive in M4.
 
 ## Requirements
 
@@ -121,6 +121,23 @@ On a physical iPhone, use the LAN IP for `LIVEKIT_PUBLIC_URL` and the two Debug 
 
 Logs: in Console.app, filter on subsystem `com.watch84.walkie` (categories `session` and `audio`).
 
+## Verify: iOS push-to-talk, heard on the web
+
+1. Start the backend and tune the iOS app and a web window to the same channel, as in the section above.
+2. **The first press only asks for the microphone.** Tap the button once and allow access. It doesn't key up behind the system dialog. If you deny access, the button shows "Microphone blocked. Allow it in Settings." To fix it, go to Settings > Privacy & Security > Microphone > Walkie, or reset the Simulator.
+3. **Hold the button and speak.** While it's keying up, the label reads **Keying up…**: the app has sent `POST /floor/request` and is waiting up to 4 seconds for the server to grant `canPublish`. Then:
+   - The app plays a short rising chirp.
+   - The button reads **On air**, with an amber countdown ring and seconds left, starting at 30.
+   - The web window shows you as the speaker with its On Air light on, and you hear yourself there.
+   - **The Simulator uses the Mac's microphone**, so use headphones on the Mac or mute the web window's speakers to avoid feedback.
+4. **Let go.** The app plays a falling chirp, sends `POST /floor/release`, and unpublishes the mic. The web window goes quiet.
+5. **Busy:** while the web window holds the floor, the iOS button reads **Channel busy** and is disabled. Pressing it only flashes "Channel busy". If the server answers a floor request with 409, you see the same flash.
+6. **30-second cap:** keep holding past 30 seconds. The server revokes publish, and the app stops transmitting and flashes **Transmission ended**.
+7. **Backgrounding:** while holding, swipe home (Shift-Cmd-H in the Simulator). The transmission ends and the floor is released.
+8. **Off air:** taking the channel off air shows **Channel off air**. Other floor failures flash **Couldn't key up. Try again.**
+
+On a physical iPhone, the phone's own microphone is used. Allow Local Network and Microphone access when iOS asks.
+
 ## Signing with a free Apple ID
 
 The Simulator doesn't need signing. To run on an iPhone:
@@ -135,7 +152,7 @@ Limits of free provisioning: apps expire after **7 days** and have to be re-run 
 
 ## Info.plist highlights
 
-- `NSMicrophoneUsageDescription` is included now so that push-to-talk can request the mic later. M2 never records audio, so iOS doesn't ask for the mic yet.
+- `NSMicrophoneUsageDescription`: shown the first time you press the talk button.
 - `WalkieAPIBaseURL` and `WalkieLiveKitURL` come from the xcconfig variables described in Server URLs.
 - `NSLocalNetworkUsageDescription` is required for LAN dev servers on a device.
 - `NSAppTransportSecurity > NSAllowsLocalNetworking`: allows plain `http://` and `ws://` to localhost, `*.local`, and LAN IPs, for development. Public hosts still need TLS.
@@ -152,9 +169,9 @@ scripts/generate.sh         xcodegen generate [+ open]
 Walkie/App/                 App entry, root phase switch
 Walkie/Models/              @Observable models: AppModel (+ AppDependencies), ProfileStore, DebugSettings; DisplayName rules
 Walkie/Networking/          protocol.ts mirror (Codable), HTTPWalkieAPI, LiveKit URL resolution
-Walkie/Session/             ChannelSession (join/retry/metadata state machine), RoomTransport abstraction
-Walkie/Live/                Apple-only: LiveKitTransport, AVAudioSession setup, live dependencies
-Walkie/Features/            Onboarding (name + tune in), Radio (listen-only), Debug settings
+Walkie/Session/             ChannelSession (join/retry/metadata), TalkController (push-to-talk), RoomTransport abstraction
+Walkie/Live/                Apple-only: LiveKitTransport, AVAudioSession, mic permission, chirps, live dependencies
+Walkie/Features/            Onboarding (name + tune in), Radio (status + hold-to-talk), Debug settings
 Walkie/Support/             Copy (all user-facing strings), Theme
 WalkieTests/                Swift Testing unit tests
 ```

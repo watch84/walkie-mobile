@@ -1,8 +1,9 @@
 import Foundation
 import Observation
 
-/// Listen-only connection to one channel: fetches a token, joins the room, and mirrors the
-/// server's room metadata. Floor state comes only from `RoomMeta`, never from local guesses.
+/// Connection to one channel: fetches a token, joins the room, and mirrors the server's room
+/// metadata. Floor state comes only from `RoomMeta`, never from local guesses. Push-to-talk
+/// (`TalkController`) publishes through this session once the server grants `canPublish`.
 @MainActor
 @Observable
 final class ChannelSession {
@@ -25,6 +26,15 @@ final class ChannelSession {
     enum JoinError: Error, Equatable {
         case misconfigured
         case noLiveKitURL
+        case notConnected
+    }
+
+    /// Room changes push-to-talk must react to.
+    enum TalkSignal: Equatable, Sendable {
+        case canPublish(Bool)
+        case floorChanged(FloorHolder?)
+        /// The room was left, replaced, or lost; any transmission in it is over.
+        case roomReset
     }
 
     private(set) var phase: Phase = .idle
@@ -35,7 +45,23 @@ final class ChannelSession {
     private(set) var speakingIdentities: Set<String> = []
     /// Token identity plus the channel this session asked for (the server doesn't echo it).
     private(set) var credentials: FloorCredentials?
+    /// Server-granted publish permission for this device (floor holder only).
+    private(set) var canPublish = false
     private(set) var lastError: String?
+
+    /// The API client the current room was joined with, for floor requests.
+    @ObservationIgnored private(set) var api: (any WalkieAPIClient)?
+    @ObservationIgnored var onTalkSignal: (@MainActor (TalkSignal) -> Void)?
+
+    var isFloorHeldByMe: Bool {
+        guard let floor, let credentials else { return false }
+        return floor.identity == credentials.identity
+    }
+
+    var isFloorHeldByOther: Bool {
+        guard let floor else { return false }
+        return floor.identity != credentials?.identity
+    }
 
     var floor: FloorHolder? { meta?.floor }
 
@@ -67,6 +93,14 @@ final class ChannelSession {
         self.name = name
         self.endpoint = endpoint
         restart(afterDelay: false)
+    }
+
+    func setMicrophone(enabled: Bool) async throws {
+        guard let transport else {
+            if enabled { throw JoinError.notConnected }
+            return
+        }
+        try await transport.setMicrophone(enabled: enabled)
     }
 
     func stop() async {
@@ -140,6 +174,7 @@ final class ChannelSession {
             throw WalkieAPIError.offAir
         }
         transport = room
+        api = endpoint.api
         credentials = token.floorCredentials(channel: channelID)
         lastError = nil
         phase = .live
@@ -150,7 +185,9 @@ final class ChannelSession {
         switch event {
         case .metadata(let raw):
             guard let incoming = RoomMeta.decode(raw), RoomMeta.isFresh(incoming, after: meta) else { return }
+            let floorChanged = incoming.floor != meta?.floor
             meta = incoming
+            if floorChanged { onTalkSignal?(.floorChanged(incoming.floor)) }
             // While joining, `join` checks `offAir` itself once connect returns.
             if incoming.offAir, transport != nil {
                 phase = .offAir
@@ -160,6 +197,10 @@ final class ChannelSession {
             listenerCount = count
         case .speaking(let identities):
             speakingIdentities = identities
+        case .publishPermission(let allowed):
+            guard allowed != canPublish else { return }
+            canPublish = allowed
+            onTalkSignal?(.canPublish(allowed))
         case .reconnecting:
             if transport != nil { phase = .reconnecting }
         case .reconnected:
@@ -178,5 +219,8 @@ final class ChannelSession {
         listenerCount = nil
         speakingIdentities = []
         credentials = nil
+        api = nil
+        canPublish = false
+        onTalkSignal?(.roomReset)
     }
 }

@@ -2,8 +2,9 @@ import Foundation
 import LiveKit
 import os
 
-/// `RoomTransport` backed by a LiveKit `Room`. The `/token` grant is subscribe-only, so this
-/// never publishes; remote audio tracks are auto-subscribed and played by the SDK.
+/// `RoomTransport` backed by a LiveKit `Room`. The `/token` grant is subscribe-only; the server
+/// grants `canPublish` to the floor holder, and only then is the mic published. Remote audio
+/// tracks are auto-subscribed and played by the SDK.
 @MainActor
 final class LiveKitTransport: RoomTransport {
     private var room: Room?
@@ -28,6 +29,12 @@ final class LiveKitTransport: RoomTransport {
 
         onEvent(.metadata(room.metadata))
         onEvent(.participantCount(RoomDelegateBridge.participantCount(room)))
+        onEvent(.publishPermission(room.localParticipant.permissions.canPublish))
+    }
+
+    func setMicrophone(enabled: Bool) async throws {
+        guard let room else { return }
+        try await room.localParticipant.setMicrophone(enabled: enabled)
     }
 
     func disconnect() async {
@@ -64,6 +71,11 @@ private final class RoomDelegateBridge: NSObject, RoomDelegate, @unchecked Senda
 
     func room(_ room: Room, didUpdateSpeakingParticipants participants: [Participant]) {
         emit(.speaking(Set(participants.compactMap { $0.identity?.stringValue })))
+    }
+
+    func room(_ room: Room, participant: Participant, didUpdatePermissions permissions: ParticipantPermissions) {
+        guard participant is LocalParticipant else { return }
+        emit(.publishPermission(permissions.canPublish))
     }
 
     func roomIsReconnecting(_ room: Room) {

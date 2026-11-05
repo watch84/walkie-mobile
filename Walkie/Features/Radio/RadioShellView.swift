@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Listen-only radio screen. The dial (M4) and push-to-talk (M3) replace the channel buttons
-/// and the disabled talk button.
+/// Radio screen: channel status plus hold-to-talk. The dial (M4) replaces the channel buttons.
 struct RadioShellView: View {
     @Environment(AppModel.self) private var model
 
@@ -36,15 +35,8 @@ struct RadioShellView: View {
 
             Spacer()
 
-            Text(Copy.Radio.pushToTalkPlaceholder)
-                .font(Theme.mono(13, weight: .medium))
-                .foregroundStyle(Theme.faint)
-                .padding(.horizontal, 28)
-                .padding(.vertical, 16)
-                .overlay(Capsule().stroke(Theme.faint, lineWidth: 1))
-                .accessibilityAddTraits(.isButton)
-                .accessibilityValue("Disabled")
-                .padding(.bottom, 28)
+            PushToTalkButton(talk: model.talk)
+                .padding(.bottom, 24)
 
             if let name = model.profile.displayName {
                 Button(Copy.Radio.you(name)) { model.editName() }

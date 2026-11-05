@@ -6,7 +6,9 @@ extension AppDependencies {
         AppDependencies(
             makeTransport: { LiveKitTransport() },
             makeAPI: { HTTPWalkieAPI(baseURL: $0) },
-            activateAudio: { AudioSessionController.activate() }
+            activateAudio: { AudioSessionController.activate() },
+            microphone: { SystemMicrophone() },
+            chirps: { ToneChirps() }
         )
     }
 }

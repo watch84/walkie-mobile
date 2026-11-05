@@ -114,6 +114,8 @@ struct DebugSettingsTests {
 final class AppHarness {
     let factory = TransportFactory()
     let api: FakeAPI
+    let microphone = FakeMicrophone()
+    let chirps = FakeChirps()
     private(set) var audioActivations = 0
     private(set) var apiBaseURLs: [URL] = []
 
@@ -126,7 +128,10 @@ final class AppHarness {
             makeTransport: { [factory] in factory.make() },
             makeAPI: { [self] url in apiBaseURLs.append(url); return api },
             activateAudio: { [self] in audioActivations += 1 },
-            retryDelay: .milliseconds(20)
+            microphone: { [microphone] in microphone },
+            chirps: { [chirps] in chirps },
+            retryDelay: .milliseconds(20),
+            grantTimeout: .milliseconds(100)
         )
     }
 
@@ -219,6 +224,23 @@ struct AppModelTests {
         #expect(model.selectedChannel.id == "channel-3")
         #expect(await waitUntil { harness.factory.made.count == 2 && model.session.phase == .live })
         #expect(await harness.api.requests.last == TokenRequest(channel: "channel-3", name: "Ada"))
+    }
+
+    @Test func backgroundingReleasesTheFloor() async {
+        let harness = AppHarness()
+        let model = harness.model(freshDefaults())
+        model.submitName("Ada")
+        #expect(await waitUntil { model.session.phase == .live })
+
+        model.talk.press()
+        #expect(await waitUntil { model.talk.phase == .keying })
+        harness.factory.last!.emit(.publishPermission(true))
+        #expect(await waitUntil { model.talk.phase == .live })
+
+        model.appWillResignActive()
+        #expect(model.talk.phase == .idle)
+        let creds = makeToken(name: "Ada").floorCredentials(channel: "channel-1")
+        #expect(await eventually { await harness.api.floorCalls == [.request(creds), .release(creds)] })
     }
 
     @Test func forgetNameReturnsToNamingAndStops() async {

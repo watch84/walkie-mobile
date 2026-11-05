@@ -6,7 +6,10 @@ struct AppDependencies {
     var makeTransport: @MainActor () -> any RoomTransport
     var makeAPI: @MainActor (URL) -> any WalkieAPIClient
     var activateAudio: @MainActor () -> Void
+    var microphone: @MainActor () -> any MicrophoneAuthorizing
+    var chirps: @MainActor () -> any ChirpPlaying
     var retryDelay: Duration = .seconds(10)
+    var grantTimeout: Duration = TalkController.defaultGrantTimeout
 }
 
 @MainActor
@@ -21,6 +24,7 @@ final class AppModel {
     let profile: ProfileStore
     let debug: DebugSettings
     let session: ChannelSession
+    let talk: TalkController
 
     private(set) var phase: Phase
     private(set) var selectedChannel: ChannelInfo = .defaultChannel
@@ -36,6 +40,12 @@ final class AppModel {
         self.debug = debug
         self.dependencies = dependencies
         session = ChannelSession(retryDelay: dependencies.retryDelay, makeTransport: dependencies.makeTransport)
+        talk = TalkController(
+            session: session,
+            microphone: dependencies.microphone(),
+            chirps: dependencies.chirps(),
+            grantTimeout: dependencies.grantTimeout
+        )
         phase = profile.hasDisplayName ? .tuneIn : .naming
     }
 
@@ -71,10 +81,17 @@ final class AppModel {
     }
 
     func editName() {
+        talk.release()
         phase = .naming
     }
 
+    /// Backgrounding or termination ends any transmission and gives the floor back.
+    func appWillResignActive() {
+        talk.appWillResignActive()
+    }
+
     func forgetName() {
+        talk.release()
         profile.clearDisplayName()
         phase = .naming
         Task { await session.stop() }

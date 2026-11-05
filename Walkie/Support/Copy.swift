@@ -26,7 +26,32 @@ enum Copy {
         static let onAir = "On air"
         static let quiet = "Quiet"
         static func listeners(_ count: Int) -> String { count == 1 ? "1 listening" : "\(count) listening" }
-        static let pushToTalkPlaceholder = "Push to talk · coming in M3"
+    }
+
+    enum Talk {
+        static let ready = "Hold to talk"
+        static let keying = "Keying up…"
+        static let live = "On air"
+        static let busy = "Channel busy"
+        static let offAir = "Channel off air"
+        static let tuning = "Tuning in…"
+        static let hint = "Hold to talk. Release to listen."
+
+        static let micBlocked = "Microphone blocked. Allow it in Settings."
+        static let keyUpFailed = "Couldn't key up. Try again."
+        static let transmissionEnded = "Transmission ended"
+
+        static func secondsLeft(_ seconds: Int) -> String { "\(seconds)s" }
+
+        static func flash(_ flash: TalkController.Flash) -> String {
+            switch flash {
+            case .micBlocked: micBlocked
+            case .busy: busy
+            case .offAir: offAir
+            case .keyUpFailed: keyUpFailed
+            case .transmissionEnded: transmissionEnded
+            }
+        }
     }
 
     enum Debug {
