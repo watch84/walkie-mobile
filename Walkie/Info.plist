@@ -47,6 +47,11 @@
 	<key>UIStatusBarStyle</key>
 	<string>UIStatusBarStyleLightContent</string>
 
+	<key>WalkieAPIBaseURL</key>
+	<string>$(WALKIE_API_BASE_URL)</string>
+	<key>WalkieLiveKitURL</key>
+	<string>$(WALKIE_LIVEKIT_URL)</string>
+
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Walkie uses the microphone so you can talk on the channel while you hold to talk.</string>
 	<key>NSLocalNetworkUsageDescription</key>

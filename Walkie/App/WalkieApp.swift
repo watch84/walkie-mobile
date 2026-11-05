@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct WalkieApp: App {
-    @State private var model = AppModel()
+    @State private var model = AppModel(dependencies: .live)
 
     var body: some Scene {
         WindowGroup {

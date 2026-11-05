@@ -43,7 +43,7 @@ struct RootView: View {
 }
 
 #Preview {
-    let model = AppModel(defaults: UserDefaults(suiteName: "preview")!)
+    let model = AppModel(defaults: UserDefaults(suiteName: "preview")!, dependencies: .live)
     RootView()
         .environment(model)
         .environment(model.profile)

@@ -8,4 +8,9 @@ PRODUCT_BUNDLE_IDENTIFIER_BASE = com.watch84.walkie
 PRODUCT_BUNDLE_IDENTIFIER = $(PRODUCT_BUNDLE_IDENTIFIER_BASE)
 DEVELOPMENT_TEAM =
 
+// Default server URLs, still editable at runtime in Debug settings. xcconfig treats `//` as a
+// comment, so write `:/$()/` in place of `://`.
+WALKIE_API_BASE_URL = http:/$()/127.0.0.1:8787
+WALKIE_LIVEKIT_URL = ws:/$()/127.0.0.1:7880
+
 #include? "Local.xcconfig"

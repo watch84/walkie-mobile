@@ -18,8 +18,15 @@ enum Copy {
     }
 
     enum Radio {
-        static let placeholder = "Radio coming soon"
         static func you(_ name: String) -> String { "You: \(name)" }
+        static let tuningIn = "Tuning in…"
+        static let live = "Live"
+        static let noSignal = "No signal"
+        static let offAir = "Channel off air"
+        static let onAir = "On air"
+        static let quiet = "Quiet"
+        static func listeners(_ count: Int) -> String { count == 1 ? "1 listening" : "\(count) listening" }
+        static let pushToTalkPlaceholder = "Push to talk · coming in M3"
     }
 
     enum Debug {

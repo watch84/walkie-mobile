@@ -111,9 +111,35 @@ struct DebugSettingsTests {
 }
 
 @MainActor
+final class AppHarness {
+    let factory = TransportFactory()
+    let api: FakeAPI
+    private(set) var audioActivations = 0
+    private(set) var apiBaseURLs: [URL] = []
+
+    init(_ responses: [Result<TokenResponse, WalkieAPIError>] = [.success(makeToken())]) {
+        api = FakeAPI(responses)
+    }
+
+    var dependencies: AppDependencies {
+        AppDependencies(
+            makeTransport: { [factory] in factory.make() },
+            makeAPI: { [self] url in apiBaseURLs.append(url); return api },
+            activateAudio: { [self] in audioActivations += 1 },
+            retryDelay: .milliseconds(20)
+        )
+    }
+
+    func model(_ defaults: UserDefaults) -> AppModel {
+        AppModel(defaults: defaults, dependencies: dependencies)
+    }
+}
+
+@MainActor
 struct AppModelTests {
-    @Test func firstLaunchSubmitUnlocksAndEntersRadio() {
-        let model = AppModel(defaults: freshDefaults())
+    @Test func firstLaunchSubmitUnlocksAndJoinsChannelOne() async {
+        let harness = AppHarness()
+        let model = harness.model(freshDefaults())
         #expect(model.phase == .naming)
 
         model.tuneIn()
@@ -122,30 +148,42 @@ struct AppModelTests {
         model.submitName("   ")
         #expect(model.phase == .naming)
         #expect(!model.audioUnlocked)
+        #expect(harness.audioActivations == 0)
 
         model.submitName("Linus")
         #expect(model.phase == .radio)
         #expect(model.audioUnlocked)
+        #expect(harness.audioActivations == 1)
+
+        #expect(await waitUntil { model.session.phase == .live })
+        #expect(await harness.api.requests == [TokenRequest(channel: "channel-1", name: "Linus")])
+        #expect(harness.apiBaseURLs.first?.absoluteString == "http://127.0.0.1:8787")
+        #expect(harness.factory.last?.connectedURL?.absoluteString == "ws://127.0.0.1:7880")
     }
 
-    @Test func returningUserSeesTuneInGate() {
+    @Test func returningUserSeesTuneInGate() async {
         let defaults = freshDefaults()
-        AppModel(defaults: defaults).submitName("Margaret")
+        let harness = AppHarness()
+        ProfileStore(defaults: defaults).setDisplayName("Margaret")
 
-        let model = AppModel(defaults: defaults)
+        let model = harness.model(defaults)
         #expect(model.phase == .tuneIn)
         #expect(!model.audioUnlocked)
+        #expect(model.session.phase == .idle)
 
         model.tuneIn()
         #expect(model.phase == .radio)
         #expect(model.audioUnlocked)
+        #expect(await waitUntil { model.session.phase == .live })
     }
 
-    @Test func editNameReturnsStraightToRadio() {
+    @Test func editNameReturnsStraightToRadioAndRejoinsWithNewName() async {
         let defaults = freshDefaults()
-        AppModel(defaults: defaults).submitName("Margaret")
-        let model = AppModel(defaults: defaults)
+        let harness = AppHarness()
+        ProfileStore(defaults: defaults).setDisplayName("Margaret")
+        let model = harness.model(defaults)
         model.tuneIn()
+        #expect(await waitUntil { model.session.phase == .live })
 
         model.editName()
         #expect(model.phase == .naming)
@@ -153,13 +191,44 @@ struct AppModelTests {
         model.submitName("Margaret  Hamilton")
         #expect(model.phase == .radio)
         #expect(model.profile.displayName == "Margaret Hamilton")
+        #expect(harness.audioActivations == 1)
+        #expect(await waitUntil { harness.factory.made.count == 2 && model.session.phase == .live })
+        #expect(await harness.api.requests.last == TokenRequest(channel: "channel-1", name: "Margaret Hamilton"))
     }
 
-    @Test func forgetNameReturnsToNaming() {
-        let model = AppModel(defaults: freshDefaults())
+    @Test func unchangedNameDoesNotRejoin() async {
+        let harness = AppHarness()
+        let model = harness.model(freshDefaults())
         model.submitName("Ada")
+        #expect(await waitUntil { model.session.phase == .live })
+
+        model.editName()
+        model.submitName("Ada")
+        #expect(model.phase == .radio)
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(harness.factory.made.count == 1)
+    }
+
+    @Test func selectingChannelRetunes() async {
+        let harness = AppHarness()
+        let model = harness.model(freshDefaults())
+        model.submitName("Ada")
+        #expect(await waitUntil { model.session.phase == .live })
+
+        model.select(ChannelInfo.live[2])
+        #expect(model.selectedChannel.id == "channel-3")
+        #expect(await waitUntil { harness.factory.made.count == 2 && model.session.phase == .live })
+        #expect(await harness.api.requests.last == TokenRequest(channel: "channel-3", name: "Ada"))
+    }
+
+    @Test func forgetNameReturnsToNamingAndStops() async {
+        let harness = AppHarness()
+        let model = harness.model(freshDefaults())
+        model.submitName("Ada")
+        #expect(await waitUntil { model.session.phase == .live })
         model.forgetName()
         #expect(model.phase == .naming)
         #expect(model.profile.displayName == nil)
+        #expect(await waitUntil { model.session.phase == .idle })
     }
 }

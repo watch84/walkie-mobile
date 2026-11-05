@@ -7,6 +7,13 @@ options:
   createIntermediateGroups: true
   generateEmptyDirectories: true
 
+packages:
+  LiveKit:
+    url: https://github.com/livekit/client-sdk-swift
+    # 2.7.0 added AudioManager.shared.audioSession.isAutomaticConfigurationEnabled.
+    # Current 2.x releases need Swift tools 6.1 (Xcode 16.3+).
+    from: "2.7.0"
+
 configFiles:
   Debug: Configs/Debug.xcconfig
   Release: Configs/Release.xcconfig
@@ -27,6 +34,8 @@ targets:
       - path: Walkie
         excludes:
           - Info.plist
+    dependencies:
+      - package: LiveKit
     settings:
       base:
         PRODUCT_NAME: Walkie
