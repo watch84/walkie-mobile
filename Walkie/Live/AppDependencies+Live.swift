@@ -10,7 +10,8 @@ extension AppDependencies {
             microphone: { SystemMicrophone() },
             chirps: { ToneChirps() },
             sounds: { RadioSoundEngine() },
-            haptics: { DetentHaptics() }
+            haptics: { DetentHaptics() },
+            observeAudioSession: { AudioSessionController.observe($0) }
         )
     }
 }

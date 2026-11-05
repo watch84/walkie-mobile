@@ -31,12 +31,31 @@ struct TokenResponse: Codable, Equatable, Sendable {
     }
 }
 
-/// Body for `POST /floor/request`, `/floor/release` and `/report`.
+/// Body for `POST /floor/request` and `/floor/release`.
 struct FloorCredentials: Codable, Equatable, Sendable {
     let channel: String
     let identity: String
     let name: String
     let key: String
+}
+
+/// Body for `POST /report`: the reporter's credentials plus who is being reported.
+struct ReportRequest: Codable, Equatable, Sendable {
+    let channel: String
+    let identity: String
+    let name: String
+    let key: String
+    let reportedIdentity: String
+    let reportedName: String
+
+    init(credentials: FloorCredentials, reportedIdentity: String, reportedName: String) {
+        channel = credentials.channel
+        identity = credentials.identity
+        name = credentials.name
+        key = credentials.key
+        self.reportedIdentity = reportedIdentity
+        self.reportedName = reportedName
+    }
 }
 
 struct FloorHolder: Codable, Equatable, Sendable {

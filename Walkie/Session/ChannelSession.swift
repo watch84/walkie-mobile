@@ -40,6 +40,11 @@ final class ChannelSession {
     private(set) var credentials: FloorCredentials?
     /// Server-granted publish permission for this device (floor holder only).
     private(set) var canPublish = false
+    /// Identities muted on this device only. Kept across rooms and applied to each new one.
+    private(set) var mutedIdentities: Set<String> = []
+    /// The most recent other floor holder and when they released (nil while still holding).
+    private(set) var lastSpeaker: FloorHolder?
+    private(set) var lastSpeakerReleasedAt: Date?
 
     /// The API client the current room was joined with, for floor requests.
     @ObservationIgnored private(set) var api: (any WalkieAPIClient)?
@@ -65,12 +70,34 @@ final class ChannelSession {
     }
 
     @ObservationIgnored private let makeTransport: @MainActor () -> any RoomTransport
+    @ObservationIgnored private let now: @MainActor () -> Date
     @ObservationIgnored private var transport: (any RoomTransport)?
     /// Bumped on every open/close so callbacks from superseded rooms are dropped.
     @ObservationIgnored private var generation = 0
 
-    init(makeTransport: @escaping @MainActor () -> any RoomTransport) {
+    init(
+        makeTransport: @escaping @MainActor () -> any RoomTransport,
+        now: @escaping @MainActor () -> Date = { Date() }
+    ) {
         self.makeTransport = makeTransport
+        self.now = now
+    }
+
+    func isMuted(_ identity: String) -> Bool {
+        mutedIdentities.contains(identity)
+    }
+
+    /// Local-only: stops (or resumes) playing `identity`'s audio on this device.
+    func setMuted(_ muted: Bool, identity: String) {
+        guard muted != isMuted(identity) else { return }
+        if muted {
+            mutedIdentities.insert(identity)
+        } else {
+            mutedIdentities.remove(identity)
+        }
+        let identities = mutedIdentities
+        guard let transport else { return }
+        Task { await transport.setMuted(identities) }
     }
 
     /// Connects to `url` with `token`. Throws `WalkieAPIError.offAir` if the room is already off
@@ -101,6 +128,7 @@ final class ChannelSession {
             throw WalkieAPIError.offAir
         }
         transport = room
+        if !mutedIdentities.isEmpty { await room.setMuted(mutedIdentities) }
         self.api = api
         credentials = token.floorCredentials(channel: channel.id)
         isOpen = true
@@ -138,8 +166,10 @@ final class ChannelSession {
         switch event {
         case .metadata(let raw):
             guard let incoming = RoomMeta.decode(raw), RoomMeta.isFresh(incoming, after: meta) else { return }
-            let floorChanged = incoming.floor != meta?.floor
+            let previous = meta?.floor
+            let floorChanged = incoming.floor != previous
             meta = incoming
+            if floorChanged { trackSpeaker(previous: previous, current: incoming.floor) }
             if floorChanged { onTalkSignal?(.floorChanged(incoming.floor)) }
             // While connecting, `open` checks `offAir` itself once connect returns.
             if incoming.offAir, isOpen { end(.offAir) }
@@ -162,6 +192,16 @@ final class ChannelSession {
         }
     }
 
+    private func trackSpeaker(previous: FloorHolder?, current: FloorHolder?) {
+        let mine = credentials?.identity
+        if let current, current.identity != mine {
+            lastSpeaker = current
+            lastSpeakerReleasedAt = nil
+        } else if let previous, previous.identity != mine, lastSpeaker?.identity == previous.identity {
+            lastSpeakerReleasedAt = now()
+        }
+    }
+
     private func end(_ reason: EndReason) {
         closeNow()
         onEnded?(reason)
@@ -177,6 +217,8 @@ final class ChannelSession {
         credentials = nil
         api = nil
         canPublish = false
+        lastSpeaker = nil
+        lastSpeakerReleasedAt = nil
         channel = nil
         if hadRoom { onTalkSignal?(.roomReset) }
     }

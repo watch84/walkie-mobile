@@ -25,6 +25,12 @@ final class RadioSoundEngine: SoundBedPlaying {
         state.clickRequests &+= 1
     }
 
+    /// Interruptions stop `AVAudioEngine` without a configuration-change notification.
+    func resume() {
+        guard source != nil else { return }
+        _ = start()
+    }
+
     private func startIfNeeded() {
         if source == nil { setUp() }
         _ = start()

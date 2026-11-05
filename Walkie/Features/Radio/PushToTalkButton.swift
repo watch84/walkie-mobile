@@ -1,48 +1,45 @@
 import SwiftUI
 
-/// Big hold-to-talk button. Touch down presses; touch up, or the system cancelling the touch,
-/// releases. `@GestureState` resets on cancellation, where `onEnded` would not fire.
+/// Big hold-to-talk button (`.ptt` in radio.css). Touch down presses; touch up, or the system
+/// cancelling the touch, releases. `@GestureState` resets on cancellation, where `onEnded` would
+/// not fire. The flash line sits underneath, as on web.
 struct PushToTalkButton: View {
     let talk: TalkController
 
     @GestureState private var touching = false
 
-    private let size: CGFloat = 168
+    private let size: CGFloat = 176
 
     var body: some View {
         let state = talk.buttonState
         let enabled = state == .ready || state == .keying || state == .live
 
         VStack(spacing: 14) {
-            Text(talk.flash.map(Copy.Talk.flash) ?? " ")
-                .font(Theme.mono(13, weight: .medium))
-                .foregroundStyle(Theme.amber)
-                .multilineTextAlignment(.center)
-                .frame(minHeight: 18)
-                .animation(.easeInOut(duration: 0.15), value: talk.flashID)
-                .accessibilityIdentifier("talkFlash")
-
             ZStack {
                 Circle()
-                    .fill(fill(for: state))
+                    .fill(faceFill(for: state))
+                    .shadow(color: Theme.red.opacity(state == .live ? 0.55 : 0), radius: 22)
                 Circle()
-                    .stroke(enabled ? Theme.amber.opacity(state == .ready ? 0.6 : 1) : Theme.faint, lineWidth: 1.5)
+                    .stroke(rimColor(for: state), lineWidth: 2)
 
-                if state == .live, let since = talk.liveSince {
-                    CountdownRing(since: since, total: TalkController.floorMax)
-                        .padding(-7)
+                if state == .live {
+                    CountdownRing(talk: talk)
+                        .padding(-8)
                 }
 
                 VStack(spacing: 6) {
-                    CapsLabel(text: label(for: state), size: 13, color: enabled ? Theme.text : Theme.dim)
-                    if state == .live, let since = talk.liveSince {
-                        SecondsLeft(since: since, total: TalkController.floorMax)
+                    CapsLabel(text: label(for: state), size: 13, color: labelColor(for: state))
+                    if state == .live {
+                        SecondsLeft(talk: talk)
                     }
                 }
+                .padding(.horizontal, 18)
+                .multilineTextAlignment(.center)
             }
             .frame(width: size, height: size)
             .scaleEffect(touching && enabled ? 0.96 : 1)
             .animation(.easeOut(duration: 0.12), value: touching)
+            .animation(.easeInOut(duration: 0.18), value: state)
             .contentShape(Circle())
             .gesture(holdGesture)
             .onChange(of: touching) { _, isDown in
@@ -53,6 +50,16 @@ struct PushToTalkButton: View {
             .accessibilityHint(enabled ? Copy.Talk.hint : "")
             .accessibilityAddTraits(.isButton)
             .accessibilityIdentifier("pushToTalkButton")
+
+            Text(talk.flash.map(Copy.Talk.flash) ?? " ")
+                .font(Theme.mono(12, weight: .medium))
+                .foregroundStyle(Theme.amber)
+                .multilineTextAlignment(.center)
+                .frame(minHeight: 16)
+                .padding(.horizontal, 24)
+                .animation(.easeInOut(duration: 0.15), value: talk.flashID)
+                .accessibilityIdentifier("talkFlash")
+                .accessibilityAddTraits(.updatesFrequently)
         }
     }
 
@@ -74,48 +81,70 @@ struct PushToTalkButton: View {
         }
     }
 
-    private func fill(for state: TalkController.ButtonState) -> Color {
+    private func faceFill(for state: TalkController.ButtonState) -> Color {
         switch state {
-        case .live: Theme.amber.opacity(0.28)
-        case .keying: Theme.amber.opacity(0.12)
-        default: Color.white.opacity(0.04)
+        case .live: Theme.red
+        case .keying: Theme.red.opacity(0.45)
+        case .ready: Theme.surface
+        case .busy: Theme.amberDim.opacity(0.18)
+        case .locked, .tuning, .noSignal, .offAir: Theme.surface.opacity(0.6)
+        }
+    }
+
+    private func rimColor(for state: TalkController.ButtonState) -> Color {
+        switch state {
+        case .live, .keying: Theme.red
+        case .ready: Theme.amber
+        case .busy: Theme.amberDim
+        case .offAir: Theme.red.opacity(0.5)
+        case .locked, .tuning, .noSignal: Theme.faint
+        }
+    }
+
+    private func labelColor(for state: TalkController.ButtonState) -> Color {
+        switch state {
+        case .live, .keying: Theme.ink
+        case .ready: Theme.amber
+        case .busy: Theme.amberDim
+        case .offAir: Theme.red
+        case .locked, .tuning, .noSignal: Theme.muted
         }
     }
 }
 
-/// Drains clockwise over `FLOOR_MAX_MS` from the moment the transmission went live.
+/// Drains clockwise toward the floor deadline (server `expiresAt`, else local 30 s).
 private struct CountdownRing: View {
-    let since: Date
-    let total: Duration
+    let talk: TalkController
 
     var body: some View {
         TimelineView(.animation) { context in
-            Circle()
-                .trim(from: 0, to: remainingFraction(at: context.date))
-                .stroke(Theme.amber, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-                .shadow(color: Theme.amber.opacity(0.7), radius: 6)
+            let fraction = talk.deadline(now: context.date).map {
+                FloorCountdown.fraction(until: $0, now: context.date)
+            } ?? 1
+            ZStack {
+                Circle().stroke(Theme.ink.opacity(0.12), lineWidth: 4)
+                Circle()
+                    .trim(from: 0, to: fraction)
+                    .stroke(Theme.amber, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .shadow(color: Theme.amber.opacity(0.7), radius: 6)
+            }
         }
         .accessibilityHidden(true)
-    }
-
-    private func remainingFraction(at date: Date) -> Double {
-        let totalSeconds = Double(total.components.seconds) + Double(total.components.attoseconds) / 1e18
-        return max(0, min(1, 1 - date.timeIntervalSince(since) / totalSeconds))
     }
 }
 
 private struct SecondsLeft: View {
-    let since: Date
-    let total: Duration
+    let talk: TalkController
 
     var body: some View {
-        TimelineView(.periodic(from: since, by: 1)) { context in
-            let elapsed = context.date.timeIntervalSince(since)
-            let left = max(0, Int((Double(total.components.seconds) - elapsed).rounded(.up)))
+        TimelineView(.periodic(from: .now, by: 0.25)) { context in
+            let left = talk.deadline(now: context.date).map {
+                FloorCountdown.wholeSecondsLeft(until: $0, now: context.date)
+            } ?? 0
             Text(Copy.Talk.secondsLeft(left))
-                .font(Theme.mono(12))
-                .foregroundStyle(Theme.amber)
+                .font(Theme.mono(12, weight: .medium))
+                .foregroundStyle(Theme.ink)
                 .monospacedDigit()
         }
     }

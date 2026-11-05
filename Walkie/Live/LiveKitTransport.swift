@@ -37,6 +37,15 @@ final class LiveKitTransport: RoomTransport {
         try await room.localParticipant.setMicrophone(enabled: enabled)
     }
 
+    func setMuted(_ identities: Set<String>) async {
+        guard let room, let bridge else { return }
+        bridge.mutedIdentities = identities
+        for participant in room.remoteParticipants.values {
+            let muted = participant.identity.map { identities.contains($0.stringValue) } ?? false
+            await RoomDelegateBridge.apply(muted: muted, to: participant)
+        }
+    }
+
     func disconnect() async {
         guard let room else { return }
         self.room = nil
@@ -48,6 +57,25 @@ final class LiveKitTransport: RoomTransport {
 /// LiveKit calls delegates off the main actor; this forwards plain-value events.
 private final class RoomDelegateBridge: NSObject, RoomDelegate, @unchecked Sendable {
     private let emit: @Sendable (RoomEvent) -> Void
+    private let lock = NSLock()
+    private var _mutedIdentities: Set<String> = []
+
+    /// Read on LiveKit's delegate queue when tracks arrive, written from the main actor.
+    var mutedIdentities: Set<String> {
+        get { lock.withLock { _mutedIdentities } }
+        set { lock.withLock { _mutedIdentities = newValue } }
+    }
+
+    static func apply(muted: Bool, to participant: RemoteParticipant) async {
+        // `set(subscribed:)` is a no-op when the preference already matches.
+        for case let publication as RemoteTrackPublication in participant.audioTracks {
+            do {
+                try await publication.set(subscribed: !muted)
+            } catch {
+                Log.session.error("Mute change failed: \(String(describing: error), privacy: .public)")
+            }
+        }
+    }
 
     init(emit: @escaping @Sendable (RoomEvent) -> Void) {
         self.emit = emit
@@ -71,6 +99,23 @@ private final class RoomDelegateBridge: NSObject, RoomDelegate, @unchecked Senda
 
     func room(_ room: Room, didUpdateSpeakingParticipants participants: [Participant]) {
         emit(.speaking(Set(participants.compactMap { $0.identity?.stringValue })))
+    }
+
+    func room(_ room: Room, participant: RemoteParticipant, didPublishTrack publication: RemoteTrackPublication) {
+        unsubscribeIfMuted(participant, publication)
+    }
+
+    /// Auto-subscribe can win the race with `didPublishTrack`; catch it here too.
+    func room(_ room: Room, participant: RemoteParticipant, didSubscribeTrack publication: RemoteTrackPublication) {
+        unsubscribeIfMuted(participant, publication)
+    }
+
+    private func unsubscribeIfMuted(_ participant: RemoteParticipant, _ publication: RemoteTrackPublication) {
+        guard publication.kind == .audio,
+              let identity = participant.identity?.stringValue,
+              mutedIdentities.contains(identity)
+        else { return }
+        Task { try? await publication.set(subscribed: false) }
     }
 
     func room(_ room: Room, participant: Participant, didUpdatePermissions permissions: ParticipantPermissions) {

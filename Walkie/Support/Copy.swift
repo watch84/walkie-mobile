@@ -20,11 +20,18 @@ enum Copy {
     enum Radio {
         static func you(_ name: String) -> String { "You: \(name)" }
         static let tuningIn = "Tuning in…"
+        static let reconnecting = "Reconnecting…"
         static let live = "Live"
-        static let noSignal = "No signal"
+        static let noSignal = "No signal. Retrying…"
         static let offAir = "Channel off air"
         static let onAir = "On air"
-        static let quiet = "Quiet"
+        static let quiet = "Quiet on the channel"
+        static let youreOnAir = "You’re on air"
+        static let mute = "Mute"
+        static let unmute = "Unmute"
+        static let report = "Report"
+        static let reported = "Reported"
+        static func muteHint(_ name: String) -> String { "Touch and hold to mute or unmute \(name) for you" }
         static let comingSoon = "Coming soon"
         static let dialLabel = "Station"
         static func dialValue(_ station: Station) -> String {
@@ -59,6 +66,10 @@ enum Copy {
             case .offAir: offAir
             case .keyUpFailed: keyUpFailed
             case .transmissionEnded: transmissionEnded
+            case .muted(let name): "Muted \(name) for you"
+            case .unmuted(let name): "Unmuted \(name)"
+            case .reported(let name): "Reported \(name). Thanks."
+            case .reportFailed: "Report failed. Try again."
             }
         }
     }

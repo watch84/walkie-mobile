@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Walkie
 
-private func freshDefaults(_ name: String = #function) -> UserDefaults {
+func freshDefaults(_ name: String = #function) -> UserDefaults {
     let suite = "walkie.tests.\(name).\(UUID().uuidString)"
     let defaults = UserDefaults(suiteName: suite)!
     defaults.removePersistentDomain(forName: suite)
@@ -119,6 +119,7 @@ final class AppHarness {
     let sounds = FakeSounds()
     let haptics = FakeHaptics()
     private(set) var audioActivations = 0
+    private(set) var audioHandler: (@MainActor (AudioSessionEvent) -> Void)?
     private(set) var apiBaseURLs: [URL] = []
 
     init(_ responses: [Result<TokenResponse, WalkieAPIError>] = [.success(makeToken())]) {
@@ -134,6 +135,7 @@ final class AppHarness {
             chirps: { [chirps] in chirps },
             sounds: { [sounds] in sounds },
             haptics: { [haptics] in haptics },
+            observeAudioSession: { [self] handler in audioHandler = handler },
             tunerTiming: fastTiming,
             grantTimeout: .milliseconds(100)
         )

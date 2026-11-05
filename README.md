@@ -2,7 +2,12 @@
 
 The native iOS client for [Walkie](https://github.com/watch84/walkie). It's written in SwiftUI and talks to the same backend as the web app.
 
-**Status: Milestone 4 (dial, sounds, haptics).** After "Tap to tune in", a horizontal station dial covers the 12 stations from the web app: 3 live channels (92.9, 94.5, 96.1) and 9 locked "Coming soon" stations. When the dial rests on a live station for 300 ms, the app joins that channel's LiveKit room. Locked stations never touch the network. Holding the big button takes the floor and publishes your microphone. Static plays while tuning or on a locked station, soft room tone plays while a live channel is quiet, and the dial ticks with a light haptic on every station. Mute, Report, and visual polish come in M5.
+**Status: Milestone 5 (polish; all milestones done).**
+- **Dial:** a horizontal station dial covers the 12 stations from the web app: 3 live channels (92.9, 94.5, 96.1) and 9 locked "Coming soon" stations. When the dial rests on a live station for 300 ms, the app joins that channel's LiveKit room. Locked stations never touch the network.
+- **Talking:** holding the big button takes the floor and publishes your microphone. The countdown ring follows the server's `expiresAt`.
+- **Speakers:** you can mute a speaker for yourself (long-press the speaker pill, or tap the Mute chip), or report them.
+- **Interruptions:** phone calls, Siri, and backgrounding end your transmission and give the floor back. Listening resumes after an interruption.
+- **Sound and look:** static, room tone, detent clicks, and haptics are generated in code. The look follows the web app's `radio.css` colours.
 
 ## Requirements
 
@@ -47,7 +52,7 @@ Then in Xcode:
 
 ## Server URLs
 
-In Debug builds, the gear icon in the top-right opens **Debug settings**. The values are saved in `UserDefaults`.
+In Debug builds, the gear icon in the bottom-left corner opens **Debug settings**. The values are saved in `UserDefaults`.
 
 | Setting | Default | Simulator | Physical device |
 | --- | --- | --- | --- |
@@ -106,16 +111,16 @@ The Simulator uses loopback and usually isn't affected by the firewall. A physic
 
 1. Start the backend with `LIVEKIT_PUBLIC_URL=ws://127.0.0.1:7880 npm run dev:all`.
 2. Open the web app (the URL `npm run dev:all` prints) in **two browser windows**. Give each a different name, and tune both to **Channel 1**.
-3. Run the iOS app in the Simulator. Enter a name and tap **Continue**. Returning users tap **Tap to tune in** instead. The status line shows **Tuning in…** and then **Live**. The listener count goes up by one, and both web windows should see the extra listener.
+3. Run the iOS app in the Simulator. Enter a name and tap **Continue**. Returning users tap **Tap to tune in** instead. The status pill shows **Tuning in…** and then **Quiet on the channel**. The listener count goes up by one, and both web windows should see the extra listener.
 4. In web window A, hold push-to-talk and speak. On iOS:
    - The **On Air** light turns on and A's name appears with an amber dot.
    - The dot pulses while A's audio is active.
    - You hear A through the Mac speakers.
 
    Web window B should behave the same way. That's your control.
-5. Release push-to-talk. On iOS, the light goes off and the status returns to **Live**. This also happens when the 30-second floor limit is reached.
+5. Release push-to-talk. On iOS, the On air pill goes dark and the status returns to **Quiet on the channel**. This also happens when the 30-second floor limit is reached.
 6. Turn the dial to 94.5 or 96.1. The app leaves the current room and joins the new one once the dial rests.
-7. Stop the backend. The room drops, and the app shows **Tuning in…** and retries every 2 seconds. While `/token` can't be reached, it shows **No signal** and keeps retrying every 2 seconds, then rejoins when the backend is back. If the channel goes off air, either as a 403 `off_air` from `/token` or as `offAir: true` in the room metadata while connected, the app leaves the room, shows **Channel off air**, and retries every 10 seconds.
+7. Stop the backend. The room drops, and the app shows **Tuning in…** and retries every 2 seconds. While `/token` can't be reached, it shows **No signal. Retrying…** and keeps retrying every 2 seconds, then rejoins when the backend is back. If the channel goes off air, either as a 403 `off_air` from `/token` or as `offAir: true` in the room metadata while connected, the app leaves the room, shows **Channel off air**, and retries every 10 seconds.
 
 On a physical iPhone, use the LAN IP for `LIVEKIT_PUBLIC_URL` and the two Debug settings URLs, and allow Local Network access when iOS asks.
 
@@ -125,7 +130,7 @@ Logs: in Console.app, filter on subsystem `com.watch84.walkie` (categories `sess
 
 Start the backend and run the app as in the sections above. Turn the Mac volume up so you can hear the beds.
 
-1. **Tune in.** The dial starts on **92.9 Channel 1**, or the station you last rested on, which is saved as `walkie:station`. The status line reads **Tuning in…** over static, then **Live**. Once the channel is quiet, the static gives way to soft room tone.
+1. **Tune in.** The dial starts on **92.9 Channel 1**, or the station you last rested on, which is saved as `walkie:station`. The status pill reads **Tuning in…** over static, then **Quiet on the channel**. Once the channel is quiet, the static gives way to soft room tone.
 2. **Drag slowly left onto 97.7 Lo-Fi Desk.**
    - Each station you pass gives a click, and a light haptic on a device.
    - The readout shows a lock and the station name, and the status line reads **Coming soon**.
@@ -135,11 +140,41 @@ Start the backend and run the app as in the sections above. Turn the Mac volume 
    - The backend log should show **no** `/token` request for the locked station.
 3. **Flick hard from 88.1 toward 105.7.** The dial coasts, rubber-bands past the end, and bounces back onto 105.7. Dragging past either end resists and springs back.
 4. **Fast scroll across the live stations** (for example, flick from 88.1 so it passes 92.9–96.1 and stops on 96.1). The backend should log exactly **one** `/token` request, for `channel-3`, about 300 ms after the dial stops. Passing over 92.9 and 94.5 doesn't connect.
-5. **Rest on 94.5 Channel 2.** You hear static and **Tuning in…**, then **Live** and room tone. A web window on Channel 2 sees you join.
+5. **Rest on 94.5 Channel 2.** You hear static and **Tuning in…**, then **Quiet on the channel** and room tone. A web window on Channel 2 sees you join.
 6. **Talk from the web window on that channel.** The room tone stops while the floor is held and you hear the speaker. It comes back after they release. Holding the iOS button also silences the bed while you talk.
 7. **Off air:** take the channel off air. The status line reads **Channel off air** with silence, and the app retries every 10 seconds. If a connected room drops for another reason, the app shows **Tuning in…** with static and retries after 2 seconds.
 8. **VoiceOver:** the dial is an adjustable element. Swipe up or down to move one station. The value is read as "92.9, Channel 1", or "88.1, Morning Static, Coming soon".
 9. **Reduce Motion** (Settings > Accessibility > Motion): a flick settles on the nearest station without coasting.
+
+## Verify: polish and edge cases (M5)
+
+1. **Look:**
+   - Black background; the header reads `walkie`, then the listener count, then the **On air** pill. The pill lights red (`#ff4b33`) while anyone holds the floor.
+   - The frequency is large, with tabular digits. The station name is amber and uppercase. Locked stations are dimmed and show a lock.
+   - The talk button is a round face with an amber rim when ready, red while keying up and live, an amber-dim tint when the channel is busy, and muted when disabled.
+   - Flash messages appear under the button.
+2. **Countdown:** hold to talk. The ring and seconds count down from the server's `floor.expiresAt`, starting at 30 seconds and reaching zero when the server revokes the floor ("Transmission ended"). Until the first metadata update arrives, it counts from your key-up time.
+3. **Mute (local only):** while a web window talks, either long-press the speaker pill (about half a second) or tap **Mute**.
+   - The flash reads "Muted {name} for you". The audio stops on iOS only; other web windows still hear them. The pill shows a crossed-out speaker.
+   - Long-press again, or tap **Unmute**, and you see "Unmuted {name}".
+   - The mute stays on if they key up again, and applies again when you return to that channel.
+   - No API request is made.
+4. **Report:** while someone else holds the floor, or for 2 minutes after they release, tap **Report**.
+   - The backend receives `POST /report` with `{channel, identity, name, key, reportedIdentity, reportedName}`.
+   - Success flashes "Reported {name}. Thanks." and the chip changes to **Reported**, disabled. Failure flashes "Report failed. Try again."
+   - The chips never appear for your own transmissions.
+5. **Status pills:** check each one:
+   - **Coming soon**, on locked stations.
+   - **Tuning in…**
+   - **Reconnecting…**, on a brief network loss: toggle the Mac's Wi-Fi for a second.
+   - **No signal. Retrying…**, when the API is down.
+   - **Channel off air**, red, retrying every 10 seconds.
+   - **Quiet on the channel**.
+   - **You’re on air**, while you talk.
+   - The speaker's name with a pulsing dot. The dot doesn't pulse under Reduce Motion.
+6. **Backgrounding:** while holding, swipe home. The app keeps itself alive briefly (a background task) until `/floor/release` and the unpublish have gone out. The web window's On air light should go off within a second.
+7. **Interruptions:** on a device, while talking, trigger Siri or take a call (FaceTime audio works). The transmission ends with "Transmission ended" and the floor is released. When the interruption ends, the app reactivates `.playAndRecord` with the speaker as the default output, restarts the sound beds, and keeps listening. In the Simulator, **Device > Trigger Siri** (if your Xcode has it) or an alarm exercises the same path.
+8. **Speaker routing:** with no headphones connected, audio comes from the loudspeaker, not the earpiece. Plug in or unplug headphones, or connect Bluetooth, and audio follows the route. If anything changes the audio category, the app switches back to `.playAndRecord`.
 
 ## Verify: iOS push-to-talk, heard on the web
 
@@ -189,7 +224,7 @@ scripts/generate.sh         xcodegen generate [+ open]
 Walkie/App/                 App entry, root phase switch
 Walkie/Models/              @Observable models: AppModel (+ AppDependencies), ProfileStore, DebugSettings; DisplayName rules; Stations (stations.ts)
 Walkie/Networking/          protocol.ts mirror (Codable), HTTPWalkieAPI, LiveKit URL resolution
-Walkie/Session/             Tuner (tuner.ts: debounce, locked, retries), ChannelSession (one room + metadata), TalkController (push-to-talk), RoomTransport
+Walkie/Session/             Tuner (tuner.ts), ChannelSession (one room, metadata, mute set), TalkController (push-to-talk), ReportController (report + mute), FlashLine + FloorCountdown, RoomTransport
 Walkie/Live/                Apple-only: LiveKitTransport, AVAudioSession, mic permission, chirps, RadioSoundEngine (beds + click), haptics
 Walkie/Features/            Onboarding (name + tune in), Radio (StationDial, readout, status, hold-to-talk), Debug settings
 Walkie/Support/             Copy (all user-facing strings), Theme, DialMotion (motion.ts), SoundBed rules, ToneSynth

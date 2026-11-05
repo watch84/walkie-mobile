@@ -11,6 +11,8 @@ actor FakeAPI: WalkieAPIClient {
     private var floorResults: [Result<Void, WalkieAPIError>]
     private(set) var requests: [TokenRequest] = []
     private(set) var floorCalls: [FloorCall] = []
+    private(set) var reports: [ReportRequest] = []
+    private var reportResults: [Result<Void, WalkieAPIError>] = [.success(())]
     private var floorDelay: Duration = .zero
     private var tokenDelay: Duration = .zero
 
@@ -25,6 +27,16 @@ actor FakeAPI: WalkieAPIClient {
 
     func setTokenDelay(_ delay: Duration) {
         tokenDelay = delay
+    }
+
+    func setReportResults(_ results: [Result<Void, WalkieAPIError>]) {
+        reportResults = results
+    }
+
+    func report(_ request: ReportRequest) async throws {
+        reports.append(request)
+        let next = reportResults.count > 1 ? reportResults.removeFirst() : reportResults[0]
+        try next.get()
     }
 
     func token(channel: String, name: String) async throws -> TokenResponse {
@@ -79,6 +91,7 @@ final class FakeTransport: RoomTransport {
     private(set) var token: String?
     private(set) var disconnected = false
     private(set) var micStates: [Bool] = []
+    private(set) var mutedSets: [Set<String>] = []
     var micError: (any Error)?
     private var onEvent: RoomEventHandler?
     var initialMetadata: String?
@@ -101,6 +114,10 @@ final class FakeTransport: RoomTransport {
     func setMicrophone(enabled: Bool) async throws {
         if enabled, let micError { throw micError }
         micStates.append(enabled)
+    }
+
+    func setMuted(_ identities: Set<String>) async {
+        mutedSets.append(identities)
     }
 
     func emit(_ event: RoomEvent) {
@@ -164,8 +181,10 @@ func eventually(timeout: Duration = .seconds(2), _ condition: () async -> Bool) 
 final class FakeSounds: SoundBedPlaying {
     private(set) var beds: [SoundBed] = []
     private(set) var clicks = 0
+    private(set) var resumes = 0
     func setBed(_ bed: SoundBed) { beds.append(bed) }
     func playDetentClick() { clicks += 1 }
+    func resume() { resumes += 1 }
 }
 
 @MainActor

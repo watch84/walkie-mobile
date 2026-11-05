@@ -46,17 +46,13 @@ final class TalkController {
         case live
     }
 
-    enum Flash: Equatable, Sendable {
-        case micBlocked
-        case busy
-        case offAir
-        case keyUpFailed
-        case transmissionEnded
-    }
+    typealias Flash = FlashMessage
 
     enum EndReason: Equatable, Sendable {
         case released
         case background
+        /// Phone call, Siri, or another app took the audio session.
+        case interrupted
         case revoked
         case roomLost
     }
@@ -66,9 +62,22 @@ final class TalkController {
 
     private(set) var phase: Phase = .idle
     private(set) var liveSince: Date?
-    private(set) var flash: Flash?
-    /// Bumped on every flash so repeating the same message re-triggers it.
-    private(set) var flashID = 0
+
+    let flashLine: FlashLine
+    var flash: Flash? { flashLine.message }
+    var flashID: Int { flashLine.id }
+
+    /// When the countdown ring reaches zero: the server's `floor.expiresAt` once metadata shows
+    /// this device holding the floor, else `FLOOR_MAX_MS` after local key-up.
+    func deadline(now: Date) -> Date? {
+        guard phase == .live else { return nil }
+        return FloorCountdown.deadline(
+            floor: session.floor,
+            myIdentity: session.credentials?.identity,
+            liveSince: liveSince,
+            now: now
+        )
+    }
 
     var buttonState: ButtonState {
         switch phase {
@@ -92,7 +101,6 @@ final class TalkController {
     @ObservationIgnored private let microphone: any MicrophoneAuthorizing
     @ObservationIgnored private let chirps: any ChirpPlaying
     @ObservationIgnored private let grantTimeout: Duration
-    @ObservationIgnored private let flashDuration: Duration
     @ObservationIgnored private let now: @MainActor () -> Date
 
     @ObservationIgnored private var isHeld = false
@@ -101,21 +109,23 @@ final class TalkController {
     @ObservationIgnored private var floor: (credentials: FloorCredentials, api: any WalkieAPIClient)?
     @ObservationIgnored private var grantWaiter: CheckedContinuation<Bool, Never>?
     @ObservationIgnored private var grantTimeoutTask: Task<Void, Never>?
-    @ObservationIgnored private var flashTask: Task<Void, Never>?
+    /// In-flight key-up and release work, awaited by `finishPendingWork()` before suspension.
+    @ObservationIgnored private var keyTask: Task<Void, Never>?
+    @ObservationIgnored private var releaseTask: Task<Void, Never>?
 
     init(
         tuner: Tuner,
         microphone: any MicrophoneAuthorizing,
         chirps: any ChirpPlaying,
+        flash: FlashLine = FlashLine(),
         grantTimeout: Duration = TalkController.defaultGrantTimeout,
-        flashDuration: Duration = .seconds(2.5),
         now: @escaping @MainActor () -> Date = { Date() }
     ) {
         self.tuner = tuner
         self.microphone = microphone
         self.chirps = chirps
         self.grantTimeout = grantTimeout
-        self.flashDuration = flashDuration
+        flashLine = flash
         self.now = now
         tuner.session.onTalkSignal = { [weak self] signal in self?.handle(signal) }
     }
@@ -157,7 +167,7 @@ final class TalkController {
         floor = (credentials, api)
         phase = .keying
         let current = attempt
-        Task { await keyUp(current, credentials: credentials, api: api) }
+        keyTask = Task { await keyUp(current, credentials: credentials, api: api) }
     }
 
     func release() {
@@ -167,6 +177,17 @@ final class TalkController {
     /// App moved to the background or is terminating.
     func appWillResignActive() {
         end(.background)
+    }
+
+    /// The audio session was interrupted (call, Siri): stop transmitting and give the floor back.
+    func audioInterrupted() {
+        end(.interrupted)
+    }
+
+    /// Waits for any key-up or release request still in flight, e.g. inside a background task.
+    func finishPendingWork() async {
+        await keyTask?.value
+        await releaseTask?.value
     }
 
     // MARK: Keying
@@ -260,10 +281,10 @@ final class TalkController {
             phase = .idle
             liveSince = nil
             chirps.playEnd()
-            if reason == .revoked || reason == .roomLost { show(.transmissionEnded) }
+            if reason == .revoked || reason == .roomLost || reason == .interrupted { show(.transmissionEnded) }
             let held = floor
             floor = nil
-            Task { [session] in
+            releaseTask = Task { [session] in
                 try? await session.setMicrophone(enabled: false)
                 // A revoke means the server already took the floor back.
                 if reason != .revoked, let held {
@@ -289,14 +310,6 @@ final class TalkController {
     // MARK: Flash
 
     private func show(_ message: Flash) {
-        flash = message
-        flashID += 1
-        let id = flashID
-        flashTask?.cancel()
-        flashTask = Task { [weak self, flashDuration] in
-            do { try await Task.sleep(for: flashDuration) } catch { return }
-            guard let self, self.flashID == id else { return }
-            self.flash = nil
-        }
+        flashLine.show(message)
     }
 }

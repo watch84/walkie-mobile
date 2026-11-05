@@ -3,6 +3,7 @@ import SwiftUI
 struct TuneInView: View {
     @Environment(AppModel.self) private var model
     @State private var pulsing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button {
@@ -31,6 +32,10 @@ struct TuneInView: View {
         .buttonStyle(.plain)
         .accessibilityIdentifier("tuneInButton")
         .onAppear {
+            guard !reduceMotion else {
+                pulsing = true
+                return
+            }
             withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) {
                 pulsing = true
             }

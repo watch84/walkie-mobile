@@ -22,7 +22,7 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.25), value: model.phase)
         #if DEBUG
-        .overlay(alignment: .topTrailing) {
+        .overlay(alignment: .bottomLeading) {
             Button {
                 showingDebug = true
             } label: {

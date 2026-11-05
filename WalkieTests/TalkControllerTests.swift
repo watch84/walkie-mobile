@@ -26,8 +26,8 @@ final class TalkHarness {
             tuner: tuner,
             microphone: microphone,
             chirps: chirps,
-            grantTimeout: grantTimeout,
-            flashDuration: .seconds(5)
+            flash: FlashLine(duration: .seconds(5)),
+            grantTimeout: grantTimeout
         )
     }
 

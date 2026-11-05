@@ -8,6 +8,7 @@ protocol WalkieAPIClient: Sendable {
     /// Takes the channel lock. On success the server grants `canPublish` over LiveKit.
     func requestFloor(_ credentials: FloorCredentials) async throws
     func releaseFloor(_ credentials: FloorCredentials) async throws
+    func report(_ request: ReportRequest) async throws
 }
 
 /// JSON client for the web walkie API server (not the Vite dev server).
@@ -33,8 +34,8 @@ struct HTTPWalkieAPI: WalkieAPIClient {
         _ = try await post("floor/release", body: credentials)
     }
 
-    func report(_ credentials: FloorCredentials) async throws {
-        _ = try await post("report", body: credentials)
+    func report(_ request: ReportRequest) async throws {
+        _ = try await post("report", body: request)
     }
 
     func makeRequest(_ path: String, body: some Encodable) throws -> URLRequest {

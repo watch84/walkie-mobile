@@ -24,4 +24,7 @@ protocol RoomTransport: AnyObject {
     func disconnect() async
     /// Publishes or unpublishes the local microphone track.
     func setMicrophone(enabled: Bool) async throws
+    /// Local-only mute: unsubscribes the audio of these identities (and of any track they
+    /// publish later), resubscribes everyone else. Never involves the server API.
+    func setMuted(_ identities: Set<String>) async
 }

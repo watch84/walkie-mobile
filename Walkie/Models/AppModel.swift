@@ -6,6 +6,17 @@ protocol SoundBedPlaying: AnyObject {
     func setBed(_ bed: SoundBed)
     /// Short tick for a dial detent.
     func playDetentClick()
+    /// Restarts output after an audio interruption or session reset.
+    func resume()
+}
+
+/// `AVAudioSession` notifications `AppModel` reacts to.
+enum AudioSessionEvent: Equatable, Sendable {
+    /// Phone call, Siri, alarm, or another app took audio.
+    case interruptionBegan
+    case interruptionEnded
+    /// Media services reset, or the category/route was changed out from under the app.
+    case needsReactivation
 }
 
 @MainActor
@@ -22,6 +33,8 @@ struct AppDependencies {
     var chirps: @MainActor () -> any ChirpPlaying
     var sounds: @MainActor () -> any SoundBedPlaying
     var haptics: @MainActor () -> any HapticsPlaying
+    /// Registers a handler for audio session interruptions and resets.
+    var observeAudioSession: @MainActor (@escaping @MainActor @Sendable (AudioSessionEvent) -> Void) -> Void = { _ in }
     var tunerTiming = Tuner.Timing()
     var grantTimeout: Duration = TalkController.defaultGrantTimeout
 }
@@ -41,6 +54,8 @@ final class AppModel {
     let debug: DebugSettings
     let tuner: Tuner
     let talk: TalkController
+    let flash: FlashLine
+    let report: ReportController
 
     var session: ChannelSession { tuner.session }
     var station: Station { tuner.station }
@@ -50,6 +65,7 @@ final class AppModel {
     /// Per launch, like the web app's audio unlock; only the name and station persist.
     /// Submitting the name screen counts as the unlocking tap, as it does on web.
     private(set) var audioUnlocked = false
+    private(set) var isAudioInterrupted = false
 
     var currentBed: SoundBed {
         guard audioUnlocked else { return .none }
@@ -71,17 +87,22 @@ final class AppModel {
 
         let storedStation = defaults.object(forKey: Self.stationKey) as? Int ?? Stations.defaultIndex
         let session = ChannelSession(makeTransport: dependencies.makeTransport)
+        let flash = FlashLine()
+        self.flash = flash
         tuner = Tuner(session: session, stationIndex: storedStation, timing: dependencies.tunerTiming)
         talk = TalkController(
             tuner: tuner,
             microphone: dependencies.microphone(),
             chirps: dependencies.chirps(),
+            flash: flash,
             grantTimeout: dependencies.grantTimeout
         )
+        report = ReportController(session: session, flash: flash)
         sounds = dependencies.sounds()
         haptics = dependencies.haptics()
         phase = profile.hasDisplayName ? .tuneIn : .naming
         observeBed()
+        dependencies.observeAudioSession { [weak self] event in self?.handleAudioSession(event) }
     }
 
     @discardableResult
@@ -121,6 +142,24 @@ final class AppModel {
     /// Backgrounding or termination ends any transmission and gives the floor back.
     func appWillResignActive() {
         talk.appWillResignActive()
+    }
+
+    /// Awaited inside a UIKit background task so the floor release reaches the server.
+    func finishPendingWork() async {
+        await talk.finishPendingWork()
+    }
+
+    func handleAudioSession(_ event: AudioSessionEvent) {
+        switch event {
+        case .interruptionBegan:
+            isAudioInterrupted = true
+            talk.audioInterrupted()
+        case .interruptionEnded, .needsReactivation:
+            isAudioInterrupted = false
+            guard audioUnlocked else { return }
+            dependencies.activateAudio()
+            sounds.resume()
+        }
     }
 
     func forgetName() {
