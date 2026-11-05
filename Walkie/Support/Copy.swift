@@ -2,25 +2,24 @@ import Foundation
 
 /// User-facing strings. Keep in sync with the web client's `src/radio/RadioApp.tsx`.
 enum Copy {
-    static let appName = "Walkie"
+    static let brand = "walkie"
 
     enum Naming {
-        static let title = "What should we call you?"
-        static let placeholder = "Your name"
+        static let title = "What should people hear you as?"
+        static let placeholder = "Display name"
+        static let hint = "Shown to everyone on the channel. No account, stored on this device only."
         static let submit = "Continue"
-        static let tooLong = "Names can be up to \(DisplayName.maxLength) characters."
-        static let empty = "Enter a name to continue."
     }
 
     enum TuneIn {
-        static let action = "Tap to tune in"
-        static func greeting(_ name: String) -> String { "Hi, \(name)" }
-        static let changeName = "Change name"
+        static let title = "Tap to tune in"
+        /// The web hint is about browser autoplay; this is the native equivalent.
+        static let hint = "One tap starts sound and connects you."
     }
 
     enum Radio {
         static let placeholder = "Radio coming soon"
-        static let tuneOut = "Tune out"
+        static func you(_ name: String) -> String { "You: \(name)" }
     }
 
     enum Debug {

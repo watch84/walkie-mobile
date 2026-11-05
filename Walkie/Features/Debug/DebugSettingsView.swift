@@ -37,8 +37,7 @@ struct DebugSettingsView: View {
                 Section {
                     Button(Copy.Debug.reset) { debug.resetToDefaults() }
                     Button(Copy.Debug.resetName, role: .destructive) {
-                        model.profile.clearDisplayName()
-                        model.tuneOut()
+                        model.forgetName()
                         dismiss()
                     }
                 } footer: {

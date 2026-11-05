@@ -14,26 +14,53 @@ struct DisplayNameTests {
         #expect(DisplayName.validate("  Ada  ") == .success("Ada"))
     }
 
-    @Test func rejectsEmptyAndBlank() {
-        #expect(DisplayName.validate("") == .failure(.empty))
-        #expect(DisplayName.validate("   \n") == .failure(.empty))
+    @Test func collapsesInternalWhitespace() {
+        #expect(DisplayName.normalize("  a \n\t b  ") == "a b")
+        #expect(DisplayName.normalize("Ada   Lovelace") == "Ada Lovelace")
     }
 
-    @Test func acceptsBoundaryLengths() {
+    @Test func rejectsEmptyAndWhitespaceOnly() {
+        #expect(DisplayName.validate("") == .failure(.empty))
+        #expect(DisplayName.validate("   \n\t ") == .failure(.empty))
+        #expect(!DisplayName.isValid(" "))
+    }
+
+    @Test func acceptsSingleCharacterAndLimit() {
         #expect(DisplayName.isValid("a"))
         #expect(DisplayName.isValid(String(repeating: "x", count: 32)))
         #expect(DisplayName.validate(String(repeating: "x", count: 33)) == .failure(.tooLong))
     }
 
-    @Test func clampsInput() {
-        let long = String(repeating: "y", count: 40)
-        #expect(DisplayName.clampInput(long).count == 32)
+    @Test func clampsToUTF16Limit() {
+        #expect(DisplayName.clampInput(String(repeating: "y", count: 40)) == String(repeating: "y", count: 32))
         #expect(DisplayName.clampInput("short") == "short")
+
+        // Each 🎙️ is 3 UTF-16 units (U+1F399 surrogate pair + U+FE0F).
+        let mics = String(repeating: "🎙️", count: 11)
+        #expect(mics.utf16.count == 33)
+        let clamped = DisplayName.clampInput(mics)
+        #expect(clamped == String(repeating: "🎙️", count: 10))
+        #expect(clamped.utf16.count == 30)
+    }
+
+    @Test func clampDoesNotSplitSurrogatePair() {
+        // 31 ASCII + 😀 (2 units) = 33: the emoji must be dropped, not halved.
+        let raw = String(repeating: "a", count: 31) + "😀"
+        let clamped = DisplayName.clampInput(raw)
+        #expect(clamped == String(repeating: "a", count: 31))
+        #expect(DisplayName.isValid(clamped))
     }
 }
 
 @MainActor
 struct ProfileStoreTests {
+    @Test func usesWebStorageKey() {
+        #expect(ProfileStore.displayNameKey == "walkie:name")
+        let defaults = freshDefaults()
+        ProfileStore(defaults: defaults).setDisplayName(" Grace  Hopper ")
+        #expect(defaults.string(forKey: "walkie:name") == "Grace Hopper")
+    }
+
     @Test func persistsAcrossInstances() {
         let defaults = freshDefaults()
         let store = ProfileStore(defaults: defaults)
@@ -49,8 +76,9 @@ struct ProfileStoreTests {
     @Test func invalidNameIsNotSaved() {
         let defaults = freshDefaults()
         let store = ProfileStore(defaults: defaults)
-        #expect(store.setDisplayName("") == .failure(.empty))
+        #expect(store.setDisplayName("   ") == .failure(.empty))
         #expect(store.displayName == nil)
+        #expect(defaults.string(forKey: "walkie:name") == nil)
     }
 }
 
@@ -84,26 +112,54 @@ struct DebugSettingsTests {
 
 @MainActor
 struct AppModelTests {
-    @Test func firstLaunchFlow() {
+    @Test func firstLaunchSubmitUnlocksAndEntersRadio() {
         let model = AppModel(defaults: freshDefaults())
         #expect(model.phase == .naming)
 
         model.tuneIn()
         #expect(model.phase == .naming)
 
-        model.submitName("")
+        model.submitName("   ")
         #expect(model.phase == .naming)
+        #expect(!model.audioUnlocked)
 
         model.submitName("Linus")
+        #expect(model.phase == .radio)
+        #expect(model.audioUnlocked)
+    }
+
+    @Test func returningUserSeesTuneInGate() {
+        let defaults = freshDefaults()
+        AppModel(defaults: defaults).submitName("Margaret")
+
+        let model = AppModel(defaults: defaults)
         #expect(model.phase == .tuneIn)
+        #expect(!model.audioUnlocked)
 
         model.tuneIn()
         #expect(model.phase == .radio)
+        #expect(model.audioUnlocked)
     }
 
-    @Test func returningUserStartsAtTuneIn() {
+    @Test func editNameReturnsStraightToRadio() {
         let defaults = freshDefaults()
         AppModel(defaults: defaults).submitName("Margaret")
-        #expect(AppModel(defaults: defaults).phase == .tuneIn)
+        let model = AppModel(defaults: defaults)
+        model.tuneIn()
+
+        model.editName()
+        #expect(model.phase == .naming)
+
+        model.submitName("Margaret  Hamilton")
+        #expect(model.phase == .radio)
+        #expect(model.profile.displayName == "Margaret Hamilton")
+    }
+
+    @Test func forgetNameReturnsToNaming() {
+        let model = AppModel(defaults: freshDefaults())
+        model.submitName("Ada")
+        model.forgetName()
+        #expect(model.phase == .naming)
+        #expect(model.profile.displayName == nil)
     }
 }

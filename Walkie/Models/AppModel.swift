@@ -13,8 +13,11 @@ final class AppModel {
     let profile: ProfileStore
     let debug: DebugSettings
 
-    /// Tuning in is per launch, like the web app's tap-to-start gate; only the name persists.
     private(set) var phase: Phase
+
+    /// Per launch, like the web app's audio unlock; only the name persists. Submitting the
+    /// name screen counts as the unlocking tap, as it does on web.
+    private(set) var audioUnlocked = false
 
     init(profile: ProfileStore, debug: DebugSettings) {
         self.profile = profile
@@ -29,7 +32,10 @@ final class AppModel {
     @discardableResult
     func submitName(_ raw: String) -> Result<String, DisplayName.ValidationError> {
         let result = profile.setDisplayName(raw)
-        if case .success = result { phase = .tuneIn }
+        if case .success = result {
+            audioUnlocked = true
+            phase = .radio
+        }
         return result
     }
 
@@ -38,14 +44,16 @@ final class AppModel {
             phase = .naming
             return
         }
+        audioUnlocked = true
         phase = .radio
     }
 
-    func changeName() {
+    func editName() {
         phase = .naming
     }
 
-    func tuneOut() {
-        phase = profile.hasDisplayName ? .tuneIn : .naming
+    func forgetName() {
+        profile.clearDisplayName()
+        phase = .naming
     }
 }

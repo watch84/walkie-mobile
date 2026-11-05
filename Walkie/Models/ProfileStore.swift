@@ -4,7 +4,7 @@ import Observation
 @MainActor
 @Observable
 final class ProfileStore {
-    static let displayNameKey = "walkie.displayName"
+    static let displayNameKey = "walkie:name"
 
     private(set) var displayName: String?
 

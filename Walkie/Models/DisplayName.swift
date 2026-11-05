@@ -1,8 +1,8 @@
 import Foundation
 
-/// Display name rules shared with the web client (`shared/protocol.ts`).
+/// Display name rules, mirroring the web client (`src/radio/RadioApp.tsx`).
 enum DisplayName {
-    static let minLength = 1
+    /// Matches the web input's `maxLength={32}`, which counts UTF-16 code units of the raw input.
     static let maxLength = 32
 
     enum ValidationError: Error, Equatable {
@@ -10,15 +10,17 @@ enum DisplayName {
         case tooLong
     }
 
+    /// `value.replace(/\s+/g, ' ').trim()`
     static func normalize(_ raw: String) -> String {
-        raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        raw.replacing(/\s+/, with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// Returns the normalized name, or why it is invalid.
     static func validate(_ raw: String) -> Result<String, ValidationError> {
         let name = normalize(raw)
-        if name.count < minLength { return .failure(.empty) }
-        if name.count > maxLength { return .failure(.tooLong) }
+        if name.isEmpty { return .failure(.empty) }
+        if name.utf16.count > maxLength { return .failure(.tooLong) }
         return .success(name)
     }
 
@@ -27,8 +29,17 @@ enum DisplayName {
         return false
     }
 
-    /// Clamps live text-field input so the user can't type past the limit.
+    /// Clamps raw text-field input like the web input's `maxLength`, without splitting a character.
     static func clampInput(_ raw: String) -> String {
-        raw.count > maxLength ? String(raw.prefix(maxLength)) : raw
+        guard raw.utf16.count > maxLength else { return raw }
+        var result = ""
+        var used = 0
+        for character in raw {
+            let size = character.utf16.count
+            if used + size > maxLength { break }
+            result.append(character)
+            used += size
+        }
+        return result
     }
 }

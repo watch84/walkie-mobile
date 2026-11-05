@@ -7,13 +7,6 @@ struct RadioShellView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                CapsLabel(text: model.profile.displayName ?? "", size: 12)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-
             Spacer()
 
             VStack(spacing: 18) {
@@ -30,11 +23,13 @@ struct RadioShellView: View {
 
             Spacer()
 
-            Button(Copy.Radio.tuneOut) { model.tuneOut() }
-                .font(Theme.mono(12))
-                .foregroundStyle(Theme.faint)
-                .padding(.bottom, 32)
-                .accessibilityIdentifier("tuneOutButton")
+            if let name = model.profile.displayName {
+                Button(Copy.Radio.you(name)) { model.editName() }
+                    .font(Theme.mono(12))
+                    .foregroundStyle(Theme.dim)
+                    .padding(.bottom, 32)
+                    .accessibilityIdentifier("editNameButton")
+            }
         }
     }
 }
