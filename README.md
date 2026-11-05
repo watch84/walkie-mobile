@@ -102,7 +102,7 @@ The Simulator uses loopback and usually isn't affected by the firewall. A physic
    Web window B should behave the same way. That's your control.
 5. Release push-to-talk. On iOS, the light goes off and the status returns to **Live**. This also happens when the 30-second floor limit is reached.
 6. Switch to channel 2 or 3 with the buttons at the top. The app leaves the current room and joins the new one.
-7. Stop the backend. The app shows **No signal** and retries every 10 seconds, then rejoins when the backend is back. If the server reports the channel as off air (403 `off_air`), the app shows **Channel off air** and retries every 10 seconds.
+7. Stop the backend. The app shows **No signal** and retries every 10 seconds, then rejoins when the backend is back. If the channel goes off air, either as a 403 `off_air` from `/token` or as `offAir: true` in the room metadata while connected, the app leaves the room, shows **Channel off air**, and retries every 10 seconds.
 
 On a physical iPhone, use the LAN IP for `LIVEKIT_PUBLIC_URL` and the two Debug settings URLs, and allow Local Network access when iOS asks.
 

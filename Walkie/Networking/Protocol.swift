@@ -25,6 +25,8 @@ struct TokenRequest: Codable, Equatable, Sendable {
     let name: String
 }
 
+/// `/token` response: `{ token, url, identity, name, key }`. The server doesn't echo the channel,
+/// so callers keep the channel they asked for.
 struct TokenResponse: Codable, Equatable, Sendable {
     /// LiveKit server URL. May be relative (`/livekit`, the web app's Vite proxy); see `LiveKitURL`.
     let url: String
@@ -32,9 +34,8 @@ struct TokenResponse: Codable, Equatable, Sendable {
     let identity: String
     let name: String
     let key: String
-    let channel: String
 
-    var floorCredentials: FloorCredentials {
+    func floorCredentials(channel: String) -> FloorCredentials {
         FloorCredentials(channel: channel, identity: identity, name: name, key: key)
     }
 }
@@ -50,13 +51,17 @@ struct FloorCredentials: Codable, Equatable, Sendable {
 struct FloorHolder: Codable, Equatable, Sendable {
     let identity: String
     let name: String
-    let startedAt: Double?
+    /// Server epoch milliseconds.
+    let since: Double
+    /// Server epoch milliseconds; at most `since + FLOOR_MAX_MS`.
+    let expiresAt: Double
 }
 
-/// LiveKit room metadata JSON, written only by the server.
+/// LiveKit room metadata JSON (`{ floor, offAir, seq }`), written only by the server.
 struct RoomMeta: Codable, Equatable, Sendable {
-    let seq: Int
     let floor: FloorHolder?
+    let offAir: Bool
+    let seq: Int
 
     static func decode(_ metadata: String?) -> RoomMeta? {
         guard let data = metadata?.data(using: .utf8), !data.isEmpty else { return nil }

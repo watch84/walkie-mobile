@@ -33,7 +33,8 @@ final class ChannelSession {
     private(set) var meta: RoomMeta?
     private(set) var listenerCount: Int?
     private(set) var speakingIdentities: Set<String> = []
-    private(set) var credentials: TokenResponse?
+    /// Token identity plus the channel this session asked for (the server doesn't echo it).
+    private(set) var credentials: FloorCredentials?
     private(set) var lastError: String?
 
     var floor: FloorHolder? { meta?.floor }
@@ -117,12 +118,15 @@ final class ChannelSession {
 
     private func join(_ gen: Int) async throws {
         guard let endpoint = endpoint?(), let name else { throw JoinError.misconfigured }
-        let token = try await endpoint.api.token(channel: channel.id, name: name)
+        let channelID = channel.id
+        let token = try await endpoint.api.token(channel: channelID, name: name)
         guard gen == generation else { throw CancellationError() }
         guard let url = LiveKitURL.resolve(token.url, fallback: endpoint.liveKitFallback) else {
             throw JoinError.noLiveKitURL
         }
 
+        // Each room connection starts its own `seq` sequence.
+        resetRoomState()
         let room = makeTransport()
         try await room.connect(url: url, token: token.token) { [weak self] event in
             self?.handle(event, gen: gen)
@@ -131,8 +135,12 @@ final class ChannelSession {
             await room.disconnect()
             throw CancellationError()
         }
+        if meta?.offAir == true {
+            await room.disconnect()
+            throw WalkieAPIError.offAir
+        }
         transport = room
-        credentials = token
+        credentials = token.floorCredentials(channel: channelID)
         lastError = nil
         phase = .live
     }
@@ -141,8 +149,12 @@ final class ChannelSession {
         guard gen == generation else { return }
         switch event {
         case .metadata(let raw):
-            if let incoming = RoomMeta.decode(raw), RoomMeta.isFresh(incoming, after: meta) {
-                meta = incoming
+            guard let incoming = RoomMeta.decode(raw), RoomMeta.isFresh(incoming, after: meta) else { return }
+            meta = incoming
+            // While joining, `join` checks `offAir` itself once connect returns.
+            if incoming.offAir, transport != nil {
+                phase = .offAir
+                restart(afterDelay: true)
             }
         case .participantCount(let count):
             listenerCount = count

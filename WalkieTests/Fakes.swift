@@ -57,13 +57,16 @@ final class TransportFactory {
     var last: FakeTransport? { made.last }
 }
 
-func makeToken(url: String = "/livekit", channel: String = "channel-1", name: String = "Ada") -> TokenResponse {
-    TokenResponse(url: url, token: "jwt-\(channel)", identity: "id-\(name)", name: name, key: "k-\(name)", channel: channel)
+func makeToken(url: String = "/livekit", name: String = "Ada") -> TokenResponse {
+    TokenResponse(url: url, token: "jwt-\(name)", identity: "id-\(name)", name: name, key: "k-\(name)")
 }
 
-func metaJSON(seq: Int, floor: (identity: String, name: String)? = nil) -> String {
-    guard let floor else { return #"{"seq":\#(seq),"floor":null}"# }
-    return #"{"seq":\#(seq),"floor":{"identity":"\#(floor.identity)","name":"\#(floor.name)","startedAt":1730000000000}}"#
+/// Server-shaped room metadata: `{ floor, offAir, seq }`.
+func metaJSON(seq: Int, floor: (identity: String, name: String)? = nil, offAir: Bool = false) -> String {
+    let floorJSON = floor.map {
+        #"{"identity":"\#($0.identity)","name":"\#($0.name)","since":1730000000000,"expiresAt":1730000030000}"#
+    } ?? "null"
+    return #"{"floor":\#(floorJSON),"offAir":\#(offAir),"seq":\#(seq)}"#
 }
 
 @MainActor

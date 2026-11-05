@@ -4,50 +4,65 @@ import Testing
 
 struct ProtocolCodableTests {
     @Test func tokenResponseDecodesServerJSON() throws {
-        let json = #"{"url":"/livekit","token":"jwt","identity":"u-1","name":"Ada","key":"secret","channel":"channel-1"}"#
+        let json = #"{"token":"jwt","url":"/livekit","identity":"u-1","name":"Ada","key":"secret"}"#
         let token = try JSONDecoder().decode(TokenResponse.self, from: Data(json.utf8))
-        #expect(token == TokenResponse(url: "/livekit", token: "jwt", identity: "u-1", name: "Ada", key: "secret", channel: "channel-1"))
+        #expect(token == TokenResponse(url: "/livekit", token: "jwt", identity: "u-1", name: "Ada", key: "secret"))
+    }
+
+    @Test func tokenResponseIgnoresUnknownFields() throws {
+        let json = #"{"token":"jwt","url":"ws://h:7880","identity":"u-1","name":"Ada","key":"k","extra":true}"#
+        #expect(try JSONDecoder().decode(TokenResponse.self, from: Data(json.utf8)).url == "ws://h:7880")
     }
 
     @Test func tokenResponseRoundTrips() throws {
         let token = makeToken(url: "ws://10.0.0.5:7880")
         let decoded = try JSONDecoder().decode(TokenResponse.self, from: JSONEncoder().encode(token))
         #expect(decoded == token)
+        let object = try JSONSerialization.jsonObject(with: JSONEncoder().encode(token)) as? [String: String]
+        #expect(object.map { Set($0.keys) } == ["token", "url", "identity", "name", "key"])
     }
 
-    @Test func floorCredentialsComeFromToken() throws {
-        let creds = makeToken().floorCredentials
-        #expect(creds == FloorCredentials(channel: "channel-1", identity: "id-Ada", name: "Ada", key: "k-Ada"))
+    @Test func floorCredentialsUseRequestedChannel() throws {
+        let creds = makeToken().floorCredentials(channel: "channel-2")
+        #expect(creds == FloorCredentials(channel: "channel-2", identity: "id-Ada", name: "Ada", key: "k-Ada"))
         let object = try JSONSerialization.jsonObject(with: JSONEncoder().encode(creds)) as? [String: String]
         #expect(object.map { Set($0.keys) } == ["channel", "identity", "name", "key"])
     }
 
-    @Test func roomMetaDecodesFloorAndNull() {
-        #expect(RoomMeta.decode(metaJSON(seq: 3)) == RoomMeta(seq: 3, floor: nil))
-        let held = RoomMeta.decode(metaJSON(seq: 4, floor: ("u-2", "Grace")))
-        #expect(held?.floor?.identity == "u-2")
-        #expect(held?.floor?.name == "Grace")
-        #expect(held?.floor?.startedAt == 1_730_000_000_000)
+    @Test func roomMetaDecodesServerShape() {
+        let idle = RoomMeta.decode(#"{"floor":null,"offAir":false,"seq":3}"#)
+        #expect(idle == RoomMeta(floor: nil, offAir: false, seq: 3))
+
+        let held = RoomMeta.decode(
+            #"{"floor":{"identity":"u-2","name":"Grace","since":1730000000000,"expiresAt":1730000030000},"offAir":false,"seq":4}"#
+        )
+        #expect(held?.floor == FloorHolder(identity: "u-2", name: "Grace", since: 1_730_000_000_000, expiresAt: 1_730_000_030_000))
+        #expect(held.map { $0.floor!.expiresAt - $0.floor!.since } == Double(WalkieProtocol.floorMaxMs))
+
+        let offAir = RoomMeta.decode(#"{"floor":null,"offAir":true,"seq":7}"#)
+        #expect(offAir?.offAir == true)
     }
 
-    @Test func roomMetaToleratesMissingOrBadMetadata() {
+    @Test func roomMetaRejectsMissingOrBadMetadata() {
         #expect(RoomMeta.decode(nil) == nil)
         #expect(RoomMeta.decode("") == nil)
         #expect(RoomMeta.decode("not json") == nil)
-        #expect(RoomMeta.decode(#"{"seq":1}"#) == RoomMeta(seq: 1, floor: nil))
+        #expect(RoomMeta.decode(#"{"seq":1}"#) == nil)
+        #expect(RoomMeta.decode(#"{"floor":{"identity":"u","name":"N","startedAt":1},"offAir":false,"seq":1}"#) == nil)
     }
 
     @Test func roomMetaRoundTrips() throws {
-        let meta = RoomMeta(seq: 9, floor: FloorHolder(identity: "u", name: "N", startedAt: nil))
+        let meta = RoomMeta(floor: FloorHolder(identity: "u", name: "N", since: 1, expiresAt: 30_001), offAir: true, seq: 9)
         #expect(try JSONDecoder().decode(RoomMeta.self, from: JSONEncoder().encode(meta)) == meta)
     }
 
     @Test func staleSeqIsIgnored() {
-        let current = RoomMeta(seq: 5, floor: nil)
-        #expect(RoomMeta.isFresh(RoomMeta(seq: 1, floor: nil), after: nil))
-        #expect(RoomMeta.isFresh(RoomMeta(seq: 6, floor: nil), after: current))
-        #expect(!RoomMeta.isFresh(RoomMeta(seq: 5, floor: nil), after: current))
-        #expect(!RoomMeta.isFresh(RoomMeta(seq: 4, floor: nil), after: current))
+        func meta(_ seq: Int) -> RoomMeta { RoomMeta(floor: nil, offAir: false, seq: seq) }
+        let current = meta(5)
+        #expect(RoomMeta.isFresh(meta(1), after: nil))
+        #expect(RoomMeta.isFresh(meta(6), after: current))
+        #expect(!RoomMeta.isFresh(meta(5), after: current))
+        #expect(!RoomMeta.isFresh(meta(4), after: current))
     }
 
     @Test func floorMaxMatchesWeb() {
@@ -118,7 +133,7 @@ struct APIErrorTests {
         let sent = try JSONDecoder().decode(TokenRequest.self, from: request.httpBody ?? Data())
         #expect(sent == TokenRequest(channel: "channel-1", name: "Ada"))
 
-        let floor = try api.makeRequest("floor/request", body: makeToken().floorCredentials)
+        let floor = try api.makeRequest("floor/request", body: makeToken().floorCredentials(channel: "channel-1"))
         #expect(floor.url?.absoluteString == "http://127.0.0.1:8787/floor/request")
     }
 }

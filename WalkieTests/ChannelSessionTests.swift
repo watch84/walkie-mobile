@@ -23,8 +23,8 @@ struct ChannelSessionTests {
 
         #expect(await waitUntil { session.phase == .live })
         #expect(factory.last?.connectedURL == fallback)
-        #expect(factory.last?.token == "jwt-channel-1")
-        #expect(session.credentials?.key == "k-Ada")
+        #expect(factory.last?.token == "jwt-Ada")
+        #expect(session.credentials == FloorCredentials(channel: "channel-1", identity: "id-Ada", name: "Ada", key: "k-Ada"))
         #expect(await api.requests == [TokenRequest(channel: "channel-1", name: "Ada")])
     }
 
@@ -111,7 +111,49 @@ struct ChannelSessionTests {
         session.tune(to: ChannelInfo.live[1], name: "Ada", endpoint: endpoint(api))
         #expect(await waitUntil { first.disconnected && session.phase == .live && factory.made.count == 2 })
         #expect(session.channel.id == "channel-2")
+        #expect(session.credentials?.channel == "channel-2")
         #expect(await api.requests.last == TokenRequest(channel: "channel-2", name: "Ada"))
+    }
+
+    @Test func offAirMetadataWhileLiveShowsOffAirAndRetries() async {
+        let api = FakeAPI([.success(makeToken()), .failure(.offAir), .success(makeToken())])
+        let session = makeSession()
+        session.tune(to: .defaultChannel, name: "Ada", endpoint: endpoint(api))
+        #expect(await waitUntil { session.phase == .live })
+        let first = factory.last!
+
+        first.emit(.metadata(metaJSON(seq: 3, offAir: true)))
+        #expect(session.phase == .offAir)
+        #expect(session.credentials == nil)
+        #expect(await waitUntil { first.disconnected })
+
+        #expect(await waitUntil { session.phase == .live && factory.made.count == 2 })
+        #expect(await api.requests.count == 3)
+    }
+
+    @Test func staleOffAirMetadataIsIgnored() async {
+        factory.configure = { $0.initialMetadata = metaJSON(seq: 5) }
+        let session = makeSession()
+        session.tune(to: .defaultChannel, name: "Ada", endpoint: endpoint(FakeAPI([.success(makeToken())])))
+        #expect(await waitUntil { session.phase == .live })
+
+        factory.last!.emit(.metadata(metaJSON(seq: 4, offAir: true)))
+        #expect(session.phase == .live)
+        #expect(session.meta?.offAir == false)
+    }
+
+    @Test func offAirInInitialMetadataDoesNotGoLive() async {
+        var joins = 0
+        factory.configure = { transport in
+            joins += 1
+            transport.initialMetadata = metaJSON(seq: 1, offAir: joins == 1)
+        }
+        let session = makeSession()
+        session.tune(to: .defaultChannel, name: "Ada", endpoint: endpoint(FakeAPI([.success(makeToken())])))
+
+        #expect(await waitUntil { session.phase == .offAir })
+        #expect(factory.made.first?.disconnected == true)
+        #expect(await waitUntil { session.phase == .live && factory.made.count == 2 })
     }
 
     @Test func missingEndpointIsNoSignal() async {
