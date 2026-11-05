@@ -3,7 +3,7 @@ name: Walkie
 options:
   deploymentTarget:
     iOS: "17.0"
-  xcodeVersion: "16.0"
+  xcodeVersion: "16.3"
   createIntermediateGroups: true
   generateEmptyDirectories: true
 
@@ -36,8 +36,15 @@ targets:
           - Info.plist
     dependencies:
       - package: LiveKit
+    preBuildScripts:
+      - name: Check Xcode project is current
+        script: '"$SRCROOT/scripts/check-project.sh"'
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
     settings:
       base:
+        # The project check reads the source tree, which the script sandbox forbids.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
         PRODUCT_NAME: Walkie
         PRODUCT_BUNDLE_IDENTIFIER: $(PRODUCT_BUNDLE_IDENTIFIER_BASE)
         INFOPLIST_FILE: Walkie/Info.plist

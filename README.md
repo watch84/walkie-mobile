@@ -28,9 +28,22 @@ make test             # unit tests on the Simulator
 make build SIM_DEST='platform=iOS Simulator,name=iPhone 15'   # pick another simulator
 ```
 
-Run `make generate` again after you pull changes that add or remove files, or that change `project.yml`.
+**Run `make project` (or `make generate`) after every `git pull`.** `Walkie.xcodeproj` is generated and git-ignored, so pulling new Swift files doesn't add them to it. A stale project shows errors like "Cannot find type 'ChannelSession' in scope". The app target has a **Check Xcode project is current** build step. It fails with a message naming any Swift file that's missing from the project, or when `project.yml` is newer than the project.
 
 In Xcode, select the **Walkie** scheme and a simulator or device, then press Run.
+
+### Troubleshooting a stale project
+
+```bash
+git pull
+make project          # regenerates Walkie.xcodeproj and reopens it
+```
+
+Then in Xcode:
+
+1. If Xcode asks, choose **Revert** or **Keep Xcode Version** so it reloads the project from disk.
+2. **File > Packages > Resolve Package Versions**. This is only needed if LiveKit shows as missing.
+3. **Product > Clean Build Folder** (Shift-Cmd-K), then build.
 
 ## Server URLs
 
