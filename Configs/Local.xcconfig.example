@@ -1,0 +1,17 @@
+// Copy to Configs/Local.xcconfig (git-ignored) and fill in.
+//
+// Your 10-character Team ID. With a free Apple ID this is your "Personal Team":
+// Xcode > Settings > Accounts > (your Apple ID) > the team row, or read it
+// from the Signing & Capabilities tab after picking the team once.
+DEVELOPMENT_TEAM = ABCDE12345
+
+// Only needed if Xcode says "com.watch84.walkie" cannot be registered
+// (bundle IDs are unique per Apple developer account). Use any reverse-DNS
+// id you own, e.g. com.<yourname>.walkie.
+// PRODUCT_BUNDLE_IDENTIFIER_BASE = com.yourname.walkie
+
+// Physical device: point the default URLs at your Mac's LAN IP (`ipconfig getifaddr en0`).
+// Keep the `:/$()/` spelling; a literal `//` starts an xcconfig comment.
+// Values already saved in Debug settings on the device take precedence.
+// WALKIE_API_BASE_URL = http:/$()/192.168.1.20:8787
+// WALKIE_LIVEKIT_URL = ws:/$()/192.168.1.20:7880

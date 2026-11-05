@@ -1,0 +1,78 @@
+name: Walkie
+
+options:
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.3"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+packages:
+  LiveKit:
+    url: https://github.com/livekit/client-sdk-swift
+    # 2.7.0 added AudioManager.shared.audioSession.isAutomaticConfigurationEnabled.
+    # Current 2.x releases need Swift tools 6.1 (Xcode 16.3+).
+    from: "2.7.0"
+
+configFiles:
+  Debug: Configs/Debug.xcconfig
+  Release: Configs/Release.xcconfig
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+targets:
+  Walkie:
+    type: application
+    platform: iOS
+    sources:
+      - path: Walkie
+        excludes:
+          - Info.plist
+    dependencies:
+      - package: LiveKit
+    preBuildScripts:
+      - name: Check Xcode project is current
+        script: '"$SRCROOT/scripts/check-project.sh"'
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+    settings:
+      base:
+        # The project check reads the source tree, which the script sandbox forbids.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        PRODUCT_NAME: Walkie
+        PRODUCT_BUNDLE_IDENTIFIER: $(PRODUCT_BUNDLE_IDENTIFIER_BASE)
+        INFOPLIST_FILE: Walkie/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_STYLE: Automatic
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
+    scheme:
+      testTargets:
+        - WalkieTests
+      gatherCoverageData: false
+
+  WalkieTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: WalkieTests
+    dependencies:
+      - target: Walkie
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: $(PRODUCT_BUNDLE_IDENTIFIER_BASE).tests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Walkie.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Walkie
+        BUNDLE_LOADER: $(TEST_HOST)
+        CODE_SIGN_STYLE: Automatic
