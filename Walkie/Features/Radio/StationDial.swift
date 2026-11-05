@@ -22,8 +22,9 @@ final class DialController {
     @ObservationIgnored private let proxy = DisplayLinkProxy()
 
     init(count: Int, index: Int) {
-        motion = DialMotion(count: count, index: index)
-        lastIndex = motion.currentIndex
+        let initial = DialMotion(count: count, index: index)
+        motion = initial
+        lastIndex = initial.currentIndex
         proxy.handler = { [weak self] link in self?.tick(link) }
     }
 
