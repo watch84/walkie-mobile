@@ -7,7 +7,6 @@ Renders one opaque 1024x1024 master and writes every classic iPhone, iPad and Ap
 slot from it, plus Contents.json. App Store Connect rejects icons with an alpha channel.
 """
 import json
-import math
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
@@ -34,72 +33,52 @@ SS = 4  # supersampling factor for smooth edges
 S = SIZE * SS
 
 AMBER = (250, 190, 62)
-AMBER_DIM = (120, 88, 26)
-BG_TOP = (24, 24, 26)
-BG_BOTTOM = (6, 6, 7)
+DOT = (226, 160, 66)
+HALO = (90, 58, 14)
+GREY = (72, 72, 74)
+BLACK = (0, 0, 0)
+
+# Layout follows the in-app tuner: one tall amber tick at the tuned frequency, a glowing
+# dot above it, and two shorter grey ticks either side. Units are fractions of the icon.
+CENTER_X = 0.5
+TICK_BOTTOM = 0.735
+CENTER_TICK_TOP = 0.39
+SIDE_TICK_TOP = 0.535
+SIDE_SPACING = 0.155
+CENTER_TICK_W = 0.03
+SIDE_TICK_W = 0.02
+DOT_Y = 0.285
+DOT_R = 0.03
+HALO_R = 0.11
 
 
 def px(v):
-    return int(round(v * S))
+    return v * S
 
 
-def background():
-    img = Image.new("RGB", (S, S))
-    draw = ImageDraw.Draw(img)
-    for y in range(S):
-        t = y / (S - 1)
-        draw.line([(0, y), (S, y)], fill=tuple(int(a + (b - a) * t) for a, b in zip(BG_TOP, BG_BOTTOM)))
-    return img
-
-
-def polar(cx, cy, r, deg):
-    a = math.radians(deg)
-    return cx + r * math.cos(a), cy - r * math.sin(a)
+def tick(draw, x, top, width, color):
+    w = px(width)
+    draw.rounded_rectangle([px(x) - w / 2, px(top), px(x) + w / 2, px(TICK_BOTTOM)],
+                           radius=w / 2, fill=color)
 
 
 def render():
-    img = background()
-    cx, cy = px(0.5), px(0.56)
+    img = Image.new("RGB", (S, S), BLACK)
 
-    glow = Image.new("RGB", (S, S), (0, 0, 0))
-    gd = ImageDraw.Draw(glow)
-    r = px(0.36)
-    gd.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(48, 34, 8))
-    glow = glow.filter(ImageFilter.GaussianBlur(px(0.08)))
-    img = ImageChops.add(img, glow)
+    halo = Image.new("RGB", (S, S), BLACK)
+    hd = ImageDraw.Draw(halo)
+    cx, cy, r = px(CENTER_X), px(DOT_Y), px(HALO_R)
+    hd.ellipse([cx - r, cy - r, cx + r, cy + r], fill=HALO)
+    halo = halo.filter(ImageFilter.GaussianBlur(px(0.05)))
+    img = ImageChops.add(img, halo)
 
     draw = ImageDraw.Draw(img)
+    for i in (-2, -1, 1, 2):
+        tick(draw, CENTER_X + i * SIDE_SPACING, SIDE_TICK_TOP, SIDE_TICK_W, GREY)
+    tick(draw, CENTER_X, CENTER_TICK_TOP, CENTER_TICK_W, AMBER)
 
-    # Tuning scale: ticks along the upper arc, every third one long.
-    r_outer = px(0.34)
-    start, end, count = 200, -20, 34
-    for i in range(count + 1):
-        deg = start + (end - start) * i / count
-        major = i % 3 == 0
-        r_in = r_outer - (px(0.07) if major else px(0.04))
-        w = px(0.016) if major else px(0.009)
-        color = AMBER if major else AMBER_DIM
-        draw.line([polar(cx, cy, r_in, deg), polar(cx, cy, r_outer, deg)], fill=color, width=w)
-
-    # Dial ring.
-    rr = px(0.23)
-    draw.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], outline=AMBER, width=px(0.028))
-
-    # Needle, tuned slightly right of centre.
-    needle_deg = 62
-    tip = polar(cx, cy, px(0.255), needle_deg)
-    draw.line([(cx, cy), tip], fill=AMBER, width=px(0.026))
-
-    # Centre knob.
-    kr = px(0.075)
-    draw.ellipse([cx - kr, cy - kr, cx + kr, cy + kr], fill=AMBER)
-    ir = px(0.03)
-    draw.ellipse([cx - ir, cy - ir, cx + ir, cy + ir], fill=BG_BOTTOM)
-
-    # Talk indicator under the dial.
-    lw, lh, ly = px(0.2), px(0.03), px(0.86)
-    draw.rounded_rectangle([cx - lw / 2, ly - lh / 2, cx + lw / 2, ly + lh / 2],
-                           radius=lh / 2, fill=AMBER_DIM)
+    r = px(DOT_R)
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=DOT)
 
     return img.resize((SIZE, SIZE), Image.LANCZOS)
 
