@@ -12,13 +12,12 @@ final class DebugSettings {
     }
 
     /// Build-time defaults come from `WALKIE_API_BASE_URL` / `WALKIE_LIVEKIT_URL` in the
-    /// xcconfigs (via Info.plist), so `Configs/Local.xcconfig` can point a device build at a LAN IP.
+    /// xcconfigs (via Info.plist), so `Configs/Local.xcconfig` can point a build at a local backend.
     enum Defaults {
-        /// The web walkie API server (`npm run dev:all`). `127.0.0.1` only reaches the
-        /// Mac from the Simulator; on a physical device use `http://<mac-lan-ip>:8787`.
-        static let builtInAPIBaseURL = "http://127.0.0.1:8787"
+        /// The live web walkie API server. Must match `Configs/Base.xcconfig`.
+        static let builtInAPIBaseURL = "https://walkie-radial.fly.dev"
         /// Used when `/token` returns a relative LiveKit URL (the web app's `/livekit` proxy).
-        static let builtInLiveKitURL = "ws://127.0.0.1:7880"
+        static let builtInLiveKitURL = "wss://walkie-pfv6bw45.livekit.cloud"
 
         static let apiBaseURL = infoValue("WalkieAPIBaseURL") ?? builtInAPIBaseURL
         static let liveKitURL = infoValue("WalkieLiveKitURL") ?? builtInLiveKitURL

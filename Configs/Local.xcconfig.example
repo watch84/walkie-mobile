@@ -10,8 +10,18 @@ DEVELOPMENT_TEAM = ABCDE12345
 // id you own, e.g. com.<yourname>.walkie.
 // PRODUCT_BUNDLE_IDENTIFIER_BASE = com.yourname.walkie
 
-// Physical device: point the default URLs at your Mac's LAN IP (`ipconfig getifaddr en0`).
+// Server URLs. Builds default to the live servers (Base.xcconfig):
+// WALKIE_API_BASE_URL = https:/$()/walkie-radial.fly.dev
+// WALKIE_LIVEKIT_URL = wss:/$()/walkie-pfv6bw45.livekit.cloud
+//
+// To use a local backend instead (`npm run dev:all` in watch84/walkie), uncomment one pair.
 // Keep the `:/$()/` spelling; a literal `//` starts an xcconfig comment.
 // Values already saved in Debug settings on the device take precedence.
+//
+// Simulator:
+// WALKIE_API_BASE_URL = http:/$()/127.0.0.1:8787
+// WALKIE_LIVEKIT_URL = ws:/$()/127.0.0.1:7880
+//
+// Physical device: your Mac's LAN IP (`ipconfig getifaddr en0`), same Wi-Fi as the Mac.
 // WALKIE_API_BASE_URL = http:/$()/192.168.1.20:8787
 // WALKIE_LIVEKIT_URL = ws:/$()/192.168.1.20:7880

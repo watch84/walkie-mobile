@@ -8,9 +8,11 @@ PRODUCT_BUNDLE_IDENTIFIER_BASE = com.watch84.walkie
 PRODUCT_BUNDLE_IDENTIFIER = $(PRODUCT_BUNDLE_IDENTIFIER_BASE)
 DEVELOPMENT_TEAM =
 
-// Default server URLs, still editable at runtime in Debug settings. xcconfig treats `//` as a
-// comment, so write `:/$()/` in place of `://`.
-WALKIE_API_BASE_URL = http:/$()/127.0.0.1:8787
-WALKIE_LIVEKIT_URL = ws:/$()/127.0.0.1:7880
+// Default server URLs: the live Walkie API on Fly and its public LiveKit Cloud host. Still
+// editable at runtime in Debug settings; override in Local.xcconfig for a local backend.
+// The LiveKit URL is only a fallback; the app uses the absolute URL `POST /token` returns.
+// xcconfig treats `//` as a comment, so write `:/$()/` in place of `://`.
+WALKIE_API_BASE_URL = https:/$()/walkie-radial.fly.dev
+WALKIE_LIVEKIT_URL = wss:/$()/walkie-pfv6bw45.livekit.cloud
 
 #include? "Local.xcconfig"

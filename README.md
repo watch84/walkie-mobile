@@ -54,12 +54,14 @@ Then in Xcode:
 
 In Debug builds, the gear icon in the bottom-left corner opens **Debug settings**. The values are saved in `UserDefaults`.
 
-| Setting | Default | Simulator | Physical device |
-| --- | --- | --- | --- |
-| API base URL | `http://127.0.0.1:8787` | `http://127.0.0.1:8787` | `http://<mac-lan-ip>:8787` |
-| LiveKit URL (fallback) | `ws://127.0.0.1:7880` | `ws://127.0.0.1:7880` | `ws://<mac-lan-ip>:7880` |
+Debug and Release builds default to the live servers, so a fresh install joins over Wi-Fi or cellular without any setup. To use a local backend, override the URLs as shown in the last two columns.
 
-The Simulator shares the Mac's network, so `127.0.0.1` reaches the Mac. A physical iPhone has to use the Mac's LAN IP, and both devices need to be on the same Wi-Fi. To find the IP:
+| Setting | Default (live) | Local backend, Simulator | Local backend, physical device |
+| --- | --- | --- | --- |
+| API base URL | `https://walkie-radial.fly.dev` | `http://127.0.0.1:8787` | `http://<mac-lan-ip>:8787` |
+| LiveKit URL (fallback) | `wss://walkie-pfv6bw45.livekit.cloud` | `ws://127.0.0.1:7880` | `ws://<mac-lan-ip>:7880` |
+
+For a local backend, the Simulator shares the Mac's network, so `127.0.0.1` reaches the Mac. A physical iPhone has to use the Mac's LAN IP, and both devices need to be on the same Wi-Fi. To find the IP:
 
 ```bash
 ipconfig getifaddr en0
@@ -67,7 +69,7 @@ ipconfig getifaddr en0
 
 `POST /token` returns the LiveKit URL to use. If it returns a relative URL, such as the web app's `/livekit` dev proxy, there's no page origin to resolve it against, so the app uses the fallback LiveKit URL instead. An absolute `http(s)` URL is used as `ws(s)`. Edits in Debug settings take effect on the next join attempt; switching channel forces one.
 
-The build-time defaults come from `WALKIE_API_BASE_URL` and `WALKIE_LIVEKIT_URL` in `Configs/Base.xcconfig`. To point a device build at your Mac without typing URLs on the phone, override them in `Configs/Local.xcconfig` (see the example file). Values already saved in Debug settings take precedence over these defaults.
+The build-time defaults come from `WALKIE_API_BASE_URL` and `WALKIE_LIVEKIT_URL` in `Configs/Base.xcconfig`. To point a build at your Mac without typing URLs on the phone, override them in `Configs/Local.xcconfig` (see the example file). Values already saved in Debug settings take precedence over these defaults; **Reset to defaults** goes back to the build's values.
 
 When the app first connects to a LAN address on a device, iOS asks for **Local Network** permission. Allow it. If you denied it, you can change it later in Settings > Privacy & Security > Local Network > Walkie.
 
@@ -109,7 +111,7 @@ The Simulator uses loopback and usually isn't affected by the firewall. A physic
 
 ## Verify: web push-to-talk, heard on iOS
 
-1. Start the backend with `LIVEKIT_PUBLIC_URL=ws://127.0.0.1:7880 npm run dev:all`.
+1. Start the backend with `LIVEKIT_PUBLIC_URL=ws://127.0.0.1:7880 npm run dev:all`, and point the app at it with the Simulator URLs from Server URLs (in `Configs/Local.xcconfig` or Debug settings).
 2. Open the web app (the URL `npm run dev:all` prints) in **two browser windows**. Give each a different name, and tune both to **Channel 1**.
 3. Run the iOS app in the Simulator. Enter a name and tap **Continue**. Returning users tap **Tap to tune in** instead. The status pill shows **Tuning in…** and then **Quiet on the channel**. The listener count goes up by one, and both web windows should see the extra listener.
 4. In web window A, hold push-to-talk and speak. On iOS:
@@ -210,7 +212,7 @@ Limits of free provisioning: apps expire after **7 days** and have to be re-run 
 - `NSMicrophoneUsageDescription`: shown the first time you press the talk button.
 - `WalkieAPIBaseURL` and `WalkieLiveKitURL` come from the xcconfig variables described in Server URLs.
 - `NSLocalNetworkUsageDescription` is required for LAN dev servers on a device.
-- `NSAppTransportSecurity > NSAllowsLocalNetworking`: allows plain `http://` and `ws://` to localhost, `*.local`, and LAN IPs, for development. Public hosts still need TLS.
+- `NSAppTransportSecurity > NSAllowsLocalNetworking`: the default servers use HTTPS/WSS; this allows plain `http://` and `ws://` to localhost, `*.local`, and LAN IPs, for a local backend. Public hosts still need TLS.
 - `UIBackgroundModes = [audio]` keeps the radio playing when the app is in the background.
 
 The audio session is set to `.playAndRecord` with `.defaultToSpeaker` and `.allowBluetooth` on the first tune-in. LiveKit's automatic audio-session management is turned off so that it doesn't switch to `.playback`.

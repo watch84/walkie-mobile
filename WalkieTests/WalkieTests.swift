@@ -86,10 +86,15 @@ struct ProfileStoreTests {
 struct DebugSettingsTests {
     @Test func defaults() {
         let settings = DebugSettings(defaults: freshDefaults())
-        #expect(settings.apiBaseURL == "http://127.0.0.1:8787")
-        #expect(settings.liveKitURL == "ws://127.0.0.1:7880")
+        #expect(settings.apiBaseURL == DebugSettings.Defaults.apiBaseURL)
+        #expect(settings.liveKitURL == DebugSettings.Defaults.liveKitURL)
         #expect(settings.isAPIBaseURLValid)
         #expect(settings.isLiveKitURLValid)
+    }
+
+    @Test func builtInDefaultsAreLiveServers() {
+        #expect(DebugSettings.Defaults.builtInAPIBaseURL == "https://walkie-radial.fly.dev")
+        #expect(DebugSettings.Defaults.builtInLiveKitURL == "wss://walkie-pfv6bw45.livekit.cloud")
     }
 
     @Test func persistsAndResets() {
@@ -99,7 +104,7 @@ struct DebugSettingsTests {
         #expect(DebugSettings(defaults: defaults).apiBaseURL == "http://192.168.1.20:8787")
 
         settings.resetToDefaults()
-        #expect(DebugSettings(defaults: defaults).apiBaseURL == "http://127.0.0.1:8787")
+        #expect(DebugSettings(defaults: defaults).apiBaseURL == DebugSettings.Defaults.apiBaseURL)
     }
 
     @Test func validatesSchemes() {
@@ -168,8 +173,8 @@ struct AppModelTests {
 
         #expect(await waitUntil { model.tuner.phase == .live })
         #expect(await harness.api.requests == [TokenRequest(channel: "channel-1", name: "Linus")])
-        #expect(harness.apiBaseURLs.first?.absoluteString == "http://127.0.0.1:8787")
-        #expect(harness.factory.last?.connectedURL?.absoluteString == "ws://127.0.0.1:7880")
+        #expect(harness.apiBaseURLs.first?.absoluteString == DebugSettings.Defaults.apiBaseURL)
+        #expect(harness.factory.last?.connectedURL?.absoluteString == DebugSettings.Defaults.liveKitURL)
     }
 
     @Test func returningUserSeesTuneInGate() async {

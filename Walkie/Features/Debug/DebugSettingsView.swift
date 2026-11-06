@@ -11,7 +11,7 @@ struct DebugSettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    urlField("http://127.0.0.1:8787", text: $debug.apiBaseURL)
+                    urlField(DebugSettings.Defaults.builtInAPIBaseURL, text: $debug.apiBaseURL)
                         .accessibilityIdentifier("apiBaseURLField")
                     if !debug.isAPIBaseURLValid {
                         Text(Copy.Debug.invalidHTTP).foregroundStyle(.red)
@@ -23,7 +23,7 @@ struct DebugSettingsView: View {
                 }
 
                 Section {
-                    urlField("ws://127.0.0.1:7880", text: $debug.liveKitURL)
+                    urlField(DebugSettings.Defaults.builtInLiveKitURL, text: $debug.liveKitURL)
                         .accessibilityIdentifier("liveKitURLField")
                     if !debug.isLiveKitURLValid {
                         Text(Copy.Debug.invalidWS).foregroundStyle(.red)
