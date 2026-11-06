@@ -3,15 +3,31 @@
 
     python3 scripts/make-app-icon.py      (needs Pillow: pip install Pillow)
 
-Writes a single opaque 1024x1024 PNG. Xcode derives every device size from it.
+Renders one opaque 1024x1024 master and writes every classic iPhone, iPad and App Store
+slot from it, plus Contents.json. App Store Connect rejects icons with an alpha channel.
 """
+import json
 import math
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "Walkie/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png"
+OUT_DIR = ROOT / "Walkie/Resources/Assets.xcassets/AppIcon.appiconset"
+
+# (idiom, size in points, scale)
+SLOTS = [
+    ("iphone", "20", 2), ("iphone", "20", 3),
+    ("iphone", "29", 2), ("iphone", "29", 3),
+    ("iphone", "40", 2), ("iphone", "40", 3),
+    ("iphone", "60", 2), ("iphone", "60", 3),
+    ("ipad", "20", 1), ("ipad", "20", 2),
+    ("ipad", "29", 1), ("ipad", "29", 2),
+    ("ipad", "40", 1), ("ipad", "40", 2),
+    ("ipad", "76", 1), ("ipad", "76", 2),
+    ("ipad", "83.5", 2),
+    ("ios-marketing", "1024", 1),
+]
 
 SIZE = 1024
 SS = 4  # supersampling factor for smooth edges
@@ -88,7 +104,24 @@ def render():
     return img.resize((SIZE, SIZE), Image.LANCZOS)
 
 
+def main():
+    master = render().convert("RGB")
+    for old in OUT_DIR.glob("*.png"):
+        old.unlink()
+
+    images = []
+    for idiom, points, scale in SLOTS:
+        pixels = round(float(points) * scale)
+        name = f"AppIcon-{idiom}-{points}@{scale}x.png"
+        icon = master if pixels == SIZE else master.resize((pixels, pixels), Image.LANCZOS)
+        icon.save(OUT_DIR / name, "PNG", optimize=True)
+        images.append({"filename": name, "idiom": idiom, "scale": f"{scale}x",
+                       "size": f"{points}x{points}"})
+        print(f"{name}: {pixels}x{pixels}")
+
+    contents = {"images": images, "info": {"author": "xcode", "version": 1}}
+    (OUT_DIR / "Contents.json").write_text(json.dumps(contents, indent=2) + "\n")
+
+
 if __name__ == "__main__":
-    icon = render().convert("RGB")
-    icon.save(OUT, "PNG", optimize=True)
-    print(f"wrote {OUT.relative_to(ROOT)} ({icon.size[0]}x{icon.size[1]}, {icon.mode})")
+    main()
