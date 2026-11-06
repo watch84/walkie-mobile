@@ -54,6 +54,10 @@
 
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Walkie uses the microphone so you can talk on the channel while you hold to talk.</string>
+	<!-- Required because the LiveKit SDK links camera APIs. Walkie is audio-only and never
+	     requests camera access in this version. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Walkie's live room service supports video, but Walkie is audio-only push-to-talk and doesn't use your camera today. If a future version adds video, Walkie will ask before turning the camera on.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Walkie connects to a Walkie server on your local network during development.</string>
 	<key>NSAppTransportSecurity</key>
